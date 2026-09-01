@@ -216,8 +216,8 @@ KisanSetu-AI/
 
 ## 👥 Contributors
 
-| [<img src="https://github.com/vedant-afk1999.png" width="80px;"/><br /><sub><b>vedant-afk1999</b></sub>](https://github.com/vedant-afk1999) | [<img src="https://github.com/mitanshsoliya.png" width="80px;"/><br /><sub><b>mitanshsoliya</b></sub>](https://github.com/mitanshsoliya) | [<img src="https://github.com/prachipandey2938.png" width="80px;"/><br /><sub><b>prachipandey2938</b></sub>](https://github.com/prachipandey2938) | [<img src="https://github.com/Rudradev02.png" width="80px;"/><br /><sub><b>Rudradev02</b></sub>](https://github.com/Rudradev02) |
-| :---: | :---: | :---: | :---: |
+| [<img src="https://github.com/vedant-afk1999.png" width="80px;"/><br /><sub><b>vedant-afk1999</b></sub>](https://github.com/vedant-afk1999) | [<img src="https://github.com/mitanshsoliya.png" width="80px;"/><br /><sub><b>mitanshsoliya</b></sub>](https://github.com/mitanshsoliya) | [<img src="https://github.com/prachipandey2938.png" width="80px;"/><br /><sub><b>prachipandey2938</b></sub>](https://github.com/prachipandey2938) | [<img src="https://github.com/Rudradev02.png" width="80px;"/><br /><sub><b>Rudradev02</b></sub>](https://github.com/Rudradev02) | [<img src="https://github.com/patraajay402-lgtm.png" width="80px;"/><br /><sub><b>patraajay402-lgtm</b></sub>](https://github.com/patraajay402-lgtm) |
+| :---: | :---: | :---: | :---: | :---: |
 
 ---
 
