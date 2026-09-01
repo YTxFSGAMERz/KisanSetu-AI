@@ -1,0 +1,17 @@
+{
+  "name": "kisansetu-ai",
+  "version": "1.0.0",
+  "description": "KisanSetu AI — Smart Procurement Management Platform | SIH 26032",
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "supabase:login": "supabase login",
+    "supabase:link": "supabase link",
+    "supabase:db:push": "supabase db push",
+    "supabase:db:reset": "supabase db reset",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:seed": "supabase db reset"
+  }
+}

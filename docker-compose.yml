@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kisansetu_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: kisansetu_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      ENVIRONMENT: ${ENVIRONMENT}
+      DEBUG: ${DEBUG}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      DEMO_MODE: ${DEMO_MODE}
+      DEMO_OTP: ${DEMO_OTP}
+      SMS_PROVIDER: ${SMS_PROVIDER}
+      SMS_API_KEY: ${SMS_API_KEY}
+      SMS_SENDER_ID: ${SMS_SENDER_ID}
+      DEMO_FARMER_EMAIL: ${DEMO_FARMER_EMAIL}
+      DEMO_FARMER_PASSWORD: ${DEMO_FARMER_PASSWORD}
+      DEMO_OFFICER_EMAIL: ${DEMO_OFFICER_EMAIL}
+      DEMO_OFFICER_PASSWORD: ${DEMO_OFFICER_PASSWORD}
+      DEMO_ADMIN_EMAIL: ${DEMO_ADMIN_EMAIL}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "python -m app.database.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: kisansetu_frontend
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

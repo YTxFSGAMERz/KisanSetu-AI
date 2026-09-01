@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  /* KisanSetu brand colours */
+  --kisan-green: #15803d;
+  --kisan-amber: #d97706;
+  --kisan-navy: #1e3a5f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #e2e8f0;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 3px;
+}
+
+/* Queue token pulse animation */
+@keyframes token-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(21, 128, 61, 0); }
+}
+
+.token-pulse {
+  animation: token-pulse 2s infinite;
+}
+
+/* Status badge colours */
+.status-waiting { @apply bg-amber-100 text-amber-800; }
+.status-called { @apply bg-blue-100 text-blue-800; }
+.status-processing { @apply bg-purple-100 text-purple-800; }
+.status-completed { @apply bg-green-100 text-green-800; }
+.status-no-show { @apply bg-red-100 text-red-800; }
+.status-pending { @apply bg-gray-100 text-gray-700; }
+
+/* Congestion colours */
+.congestion-low { @apply text-green-700 bg-green-50 border-green-200; }
+.congestion-moderate { @apply text-amber-700 bg-amber-50 border-amber-200; }
+.congestion-high { @apply text-orange-700 bg-orange-50 border-orange-200; }
+.congestion-very-high { @apply text-red-700 bg-red-50 border-red-200; }
