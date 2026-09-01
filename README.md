@@ -4,7 +4,7 @@
 > **Organization:** Ministry of Consumer Affairs, Food & Public Distribution  
 > **Department:** Department of Consumer Affairs (DoCA)  
 > **Theme:** Smart Automation  
-> **🌐 Live Production Web App:** [https://frontend-seven-sooty-62.vercel.app](https://frontend-seven-sooty-62.vercel.app)
+> **🌐 Live Production Web App:** [https://kisansetu-sih.vercel.app](https://kisansetu-sih.vercel.app) *(Mirror: [https://kisansetu-india.vercel.app](https://kisansetu-india.vercel.app))*
 
 ---
 
