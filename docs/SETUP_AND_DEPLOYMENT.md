@@ -32,8 +32,8 @@ python -m venv venv
 
 pip install -r requirements.txt
 
-# Populate real Indian Mandis and CACP MSP crops
-python -m app.database.setup_real_db
+# Populate local SQLite database with real Mandis, MSP crops, slots & demo users (100% offline)
+python -m app.database.setup_local_db
 
 # Run FastAPI server (Port 8000)
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -119,3 +119,25 @@ cd backend
 python -m pytest tests/ -v
 # 13 tests checking wait-time prediction, congestion score, and slot optimization
 ```
+
+---
+
+## 7. Zero-Shutdown GitHub Actions Database Deployment
+
+To prevent free-tier cloud database pausing (e.g. Supabase sleeping after 7 days of inactivity), KisanSetu AI uses GitHub Actions as its automated database deployment and refresh engine.
+
+### How It Works:
+1. **Repository Versioned Database:** The verified seed data is stored directly in `frontend/data/seed.json` and bundled into Vercel serverless deployments.
+2. **Scheduled Auto-Refresh:** Every Sunday at midnight (`0 0 * * 0`), GitHub Actions runs:
+   - `python -m app.database.setup_local_db`
+   - `python -m app.database.export_seed_json`
+   - `pytest tests/ -v`
+   - `npm run build`
+   - Automatically commits the refreshed slot schedules directly back to `main` with `[skip ci]`.
+3. **Manual 1-Click Refresh:**
+   - In GitHub, navigate to **Actions** → **Deploy & Refresh Database**.
+   - Click **Run workflow** → select `main` → **Run workflow**.
+   - The workflow executes all tests, generates build artifacts, and updates the database snapshot.
+4. **Downloadable Database Artifact:**
+   - Every GitHub Actions run uploads `kisansetu-database-snapshot` containing `backend/kisansetu.db`, `frontend/data/seed.json`, and `frontend/data/kisansetu_store.json`.
+

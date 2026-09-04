@@ -33,11 +33,14 @@ export async function POST(req: Request) {
       is_active: true,
     };
 
-    const token = Buffer.from(JSON.stringify({ sub: user.email, role: user.role, id: user.id })).toString('base64');
+    const token = Buffer.from(JSON.stringify({ sub: user.email, role: user.role, id: user.id, name: user.name })).toString('base64');
 
     return NextResponse.json({
       access_token: token,
       token_type: 'bearer',
+      user_id: user.id,
+      role: user.role,
+      name: user.name,
       user,
     });
   } catch (error: any) {

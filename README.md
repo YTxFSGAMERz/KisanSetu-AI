@@ -55,8 +55,8 @@ cd backend
 # Install dependencies
 python -m pip install -r requirements.txt
 
-# Seed database with demo data (3 Mandis, 5 crops, 20 farmers, 40+ bookings)
-python -m app.database.seed
+# Seed local SQLite database (15 Mandis, 19 crops, 1200+ slots, demo accounts)
+python -m app.database.setup_local_db
 
 # Start the API server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -200,6 +200,17 @@ KisanSetu-AI/
 ├── docker-compose.yml
 └── .env.example
 ```
+
+---
+
+## ⚡ GitHub Actions Database Deployment (Zero Cloud Shutdown)
+
+KisanSetu AI uses GitHub Actions as an automated database deployment engine. It completely eliminates free-tier cloud database timeouts and shutdowns (e.g. Supabase pausing due to inactivity):
+
+- **Automatic Continuous Updates:** Whenever backend models, schemas, or seed data change on `main`, GitHub Actions automatically seeds, verifies, and packages the database.
+- **Weekly Auto-Refresh:** Automatically generates fresh rolling 14-day slot schedules via cron so future slots never expire.
+- **Manual 1-Click Trigger:** Go to **GitHub Actions → "Deploy & Refresh Database" → "Run workflow"** to rebuild, verify, and push the latest database snapshot.
+- **Permanent Uptime:** The database snapshot is versioned in the repository (`frontend/data/seed.json`) and served by Vercel with 100% uptime, zero sleep, and zero external hosting costs.
 
 ---
 

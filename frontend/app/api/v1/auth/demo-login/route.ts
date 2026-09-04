@@ -3,13 +3,21 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
-    const roleParam = url.searchParams.get('role')?.toUpperCase() || 'FARMER';
+    let roleParam = url.searchParams.get('role')?.toUpperCase();
+
+    if (!roleParam) {
+      try {
+        const body = await req.json();
+        roleParam = (body.role || '').toUpperCase();
+      } catch {}
+    }
+    roleParam = roleParam || 'FARMER';
     
     let user;
     if (roleParam.includes('OFFICER')) {
       user = {
         id: 2,
-        email: 'officer@kisansetu.gov.in',
+        email: 'demo.officer@example.com',
         phone: '9876543211',
         name: 'Anil Kumar (Mandi Officer)',
         full_name: 'Anil Kumar (Mandi Officer)',
@@ -20,7 +28,7 @@ export async function POST(req: Request) {
     } else if (roleParam.includes('ADMIN')) {
       user = {
         id: 3,
-        email: 'admin@kisansetu.gov.in',
+        email: 'demo.admin@example.com',
         phone: '9876543212',
         name: 'Dr. Ramesh Sharma (Director, DoCA)',
         full_name: 'Dr. Ramesh Sharma (Director, DoCA)',
@@ -30,7 +38,7 @@ export async function POST(req: Request) {
     } else {
       user = {
         id: 1,
-        email: 'farmer@kisansetu.in',
+        email: 'demo.farmer@example.com',
         phone: '9876543210',
         name: 'Rajesh Verma (Kisan)',
         full_name: 'Rajesh Verma (Kisan)',
@@ -40,11 +48,14 @@ export async function POST(req: Request) {
       };
     }
 
-    const token = Buffer.from(JSON.stringify({ sub: user.email, role: user.role, id: user.id })).toString('base64');
+    const token = Buffer.from(JSON.stringify({ sub: user.email, role: user.role, id: user.id, name: user.name })).toString('base64');
 
     return NextResponse.json({
       access_token: token,
       token_type: 'bearer',
+      user_id: user.id,
+      role: user.role,
+      name: user.name,
       user,
     });
   } catch (error: any) {

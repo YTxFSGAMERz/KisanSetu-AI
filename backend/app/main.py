@@ -31,14 +31,22 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: create database tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Startup: attempt database tables initialization
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("✅ Database connection established and tables verified.")
+    except Exception as e:
+        print(f"⚠️ Warning: Remote database connection failed ({e}). Backend starting in offline/demo mode.")
+
     print(f"✅ KisanSetu AI backend running on http://{settings.BACKEND_HOST}:{settings.BACKEND_PORT}")
     print(f"📖 API Documentation: http://{settings.BACKEND_HOST}:{settings.BACKEND_PORT}/docs")
     yield
     # Shutdown
-    await engine.dispose()
+    try:
+        await engine.dispose()
+    except Exception:
+        pass
     print("🛑 KisanSetu AI backend shutting down")
 
 
