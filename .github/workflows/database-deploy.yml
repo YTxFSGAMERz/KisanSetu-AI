@@ -71,10 +71,10 @@ jobs:
         env:
           DATABASE_URL: sqlite+aiosqlite:///./kisansetu.db
 
-      - name: ⚡ Set up Node.js 20
+      - name: ⚡ Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: 🏗️ Verify Next.js Serverless Database Build
         run: |
