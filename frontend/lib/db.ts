@@ -8,6 +8,7 @@
  */
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import seedData from '../data/seed.json';
 
 export interface Centre {
@@ -158,9 +159,9 @@ class UniversalDatabase {
   constructor() {
     this.isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
     
-    // Choose storage path: /tmp on Vercel Lambda, or ./data locally
+    // Choose storage path: temp directory on Vercel Lambda / serverless, or ./data locally
     if (this.isVercel) {
-      this.filePath = '/tmp/kisansetu_store.json';
+      this.filePath = path.join(os.tmpdir(), 'kisansetu_store.json');
     } else {
       const dataDir = path.join(process.cwd(), 'data');
       if (!fs.existsSync(dataDir)) {
