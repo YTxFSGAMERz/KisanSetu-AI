@@ -117,8 +117,8 @@ export default function BookSlotPage() {
                     onClick={() => setSelectedCentre(c)}
                     className={`w-full text-left border-2 rounded-xl px-4 py-3 transition-all ${selectedCentre?.id === c.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
                   >
-                    <div className="font-medium text-sm">{c.name}</div>
-                    <div className="text-xs text-gray-500">{c.district}, {c.state} • Daily Capacity: {c.daily_capacity}</div>
+                    <div className="font-semibold text-sm text-slate-900">{c.name}</div>
+                    <div className="text-xs text-slate-600 mt-0.5">{c.district}, {c.state} • Daily Capacity: {c.daily_capacity}</div>
                   </button>
                 ))}
               </div>
@@ -133,8 +133,8 @@ export default function BookSlotPage() {
                     onClick={() => setSelectedCrop(c)}
                     className={`border-2 rounded-xl px-3 py-2 text-sm text-left transition-all ${selectedCrop?.id === c.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'}`}
                   >
-                    <div className="font-medium">{c.name}</div>
-                    <div className="text-xs text-gray-500">MSP: ₹{c.msp_per_quintal.toLocaleString('en-IN')}/Qtl</div>
+                    <div className="font-semibold text-slate-900">{c.name}</div>
+                    <div className="text-xs text-slate-600 mt-0.5">MSP: ₹{c.msp_per_quintal.toLocaleString('en-IN')}/Qtl</div>
                   </button>
                 ))}
               </div>
@@ -218,16 +218,16 @@ export default function BookSlotPage() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-sm mb-3">
-                  <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <p className="text-xs text-gray-500">Wait Time</p>
+                  <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 text-center">
+                    <p className="text-xs text-slate-600 font-medium">Wait Time</p>
                     <p className="font-bold text-green-700">~{rec.estimated_wait_minutes} min</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <p className="text-xs text-gray-500">Booked</p>
-                    <p className="font-bold">{rec.slot.booked_count}/{rec.slot.capacity}</p>
+                  <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 text-center">
+                    <p className="text-xs text-slate-600 font-medium">Booked</p>
+                    <p className="font-bold text-slate-900">{rec.slot.booked_count}/{rec.slot.capacity}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <p className="text-xs text-gray-500">Available</p>
+                  <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 text-center">
+                    <p className="text-xs text-slate-600 font-medium">Available</p>
                     <p className="font-bold text-green-700">{rec.slot.available}</p>
                   </div>
                 </div>

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useWebSocket } from '@/context/websocket-context';
-import { queueApi, bookingsApi } from '@/lib/api';
+import { queueApi, bookingsApi, farmerApi } from '@/lib/api';
 
 function LiveQueueContent() {
   const { user, loading } = useAuth();
@@ -16,24 +16,51 @@ function LiveQueueContent() {
   const [queueStatus, setQueueStatus] = useState<any>(null);
   const [myToken, setMyToken] = useState<any>(null);
   const [centreId, setCentreId] = useState<number | null>(null);
+  const [resolvedBookingId, setResolvedBookingId] = useState<string | null>(bookingId);
   const [fetching, setFetching] = useState(true);
   const [calledAlert, setCalledAlert] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
   const fetchQueueData = useCallback(async (cId: number) => {
     const status = await queueApi.status(cId);
     setQueueStatus(status);
   }, []);
 
+  const refreshAll = useCallback(async (cId: number, bId: string) => {
+    try {
+      await fetchQueueData(cId);
+      const token = await queueApi.getByBooking(Number(bId));
+      const prevStatus = myToken?.status;
+      setMyToken(token);
+      // Check if our token was just CALLED (polling discovery of FARMER_CALLED event)
+      if (token?.status === 'CALLED' && prevStatus !== 'CALLED') {
+        setCalledAlert(true);
+        setTimeout(() => setCalledAlert(false), 15000);
+      }
+    } catch {}
+  }, [fetchQueueData, myToken?.status]);
+
   useEffect(() => {
     if (!loading && !user) router.push('/login');
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (!bookingId) return;
     (async () => {
       try {
-        const booking = await bookingsApi.get(Number(bookingId));
-        const token = await queueApi.getByBooking(Number(bookingId));
+        let bId = bookingId;
+        if (!bId) {
+          const dash = await farmerApi.dashboard();
+          if (dash?.upcoming_slot?.booking_id) {
+            bId = String(dash.upcoming_slot.booking_id);
+          }
+        }
+        if (!bId) {
+          setFetching(false);
+          return;
+        }
+        setResolvedBookingId(bId);
+        const booking = await bookingsApi.get(Number(bId));
+        const token = await queueApi.getByBooking(Number(bId));
         setMyToken(token);
         setCentreId(booking.centre_id);
         await fetchQueueData(booking.centre_id);
@@ -45,6 +72,22 @@ function LiveQueueContent() {
       }
     })();
   }, [bookingId]);
+
+  // ── Polling fallback when WebSocket is unavailable (Vercel, etc.) ────────────
+  useEffect(() => {
+    if (!centreId || !resolvedBookingId) return;
+    if (isConnected) {
+      setIsPolling(false);
+      return; // WebSocket is live — no polling needed
+    }
+    // WebSocket not connected — poll every 5 seconds
+    setIsPolling(true);
+    const interval = setInterval(() => refreshAll(centreId, resolvedBookingId), 5000);
+    return () => {
+      clearInterval(interval);
+      setIsPolling(false);
+    };
+  }, [isConnected, centreId, resolvedBookingId, refreshAll]);
 
   // Handle real-time WebSocket events
   useEffect(() => {
@@ -83,44 +126,71 @@ function LiveQueueContent() {
             <h1 className="font-bold text-gray-900">Live Queue</h1>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
-            <span className="text-xs text-gray-500">{isConnected ? 'Live' : 'Offline'}</span>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : isPolling ? 'bg-amber-400 animate-pulse' : 'bg-gray-400'}`} />
+            <span className="text-xs text-gray-500">{isConnected ? '📡 Live' : isPolling ? '🔄 Polling' : 'Offline'}</span>
           </div>
         </div>
       </div>
 
-      {/* CALLED ALERT */}
-      {calledAlert && (
+      {/* CALLED / PROCESSING ALERTS */}
+      {calledAlert && myToken?.status === 'CALLED' && (
         <div className="bg-blue-600 text-white text-center py-4 px-4 animate-pulse">
           <p className="text-lg font-bold">🔔 TOKEN {myToken?.token_number} — PLEASE PROCEED TO COUNTER!</p>
           <p className="text-sm text-blue-100">Come to the procurement counter with your produce immediately.</p>
         </div>
       )}
 
+      {myToken?.status === 'PROCESSING' && (
+        <div className="bg-purple-700 text-white text-center py-3.5 px-4 shadow-sm">
+          <p className="text-base font-bold">⚖️ TOKEN {myToken.token_number} — BEING PROCESSED AT COUNTER 1</p>
+          <p className="text-xs text-purple-200 mt-0.5">Your produce is currently being weighed and quality checked by the Mandi Officer.</p>
+        </div>
+      )}
+
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* My Token */}
         {myToken && (
-          <div className={`rounded-2xl p-6 border-2 text-center ${myToken.status === 'CALLED' ? 'border-blue-500 bg-blue-50' : myToken.status === 'PROCESSING' ? 'border-purple-400 bg-purple-50' : myToken.status === 'COMPLETED' ? 'border-green-400 bg-green-50' : 'border-green-300 bg-white'}`}>
+          <div className={`rounded-2xl p-6 border-2 text-center ${myToken.status === 'CALLED' ? 'border-blue-500 bg-blue-50' : myToken.status === 'PROCESSING' ? 'border-purple-400 bg-purple-50/70 shadow-sm' : myToken.status === 'COMPLETED' ? 'border-green-400 bg-green-50' : 'border-green-300 bg-white'}`}>
             <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider mb-2">Your Token</p>
-            <div className={`text-6xl font-extrabold font-mono mb-4 ${myToken.status === 'CALLED' ? 'text-blue-700 token-pulse' : 'text-green-800'}`}>
+            <div className={`text-6xl font-extrabold font-mono mb-4 ${
+              myToken.status === 'CALLED'
+                ? 'text-blue-700 token-pulse'
+                : myToken.status === 'PROCESSING'
+                ? 'text-purple-800'
+                : myToken.status === 'COMPLETED'
+                ? 'text-emerald-700'
+                : 'text-green-800'
+            }`}>
               {myToken.token_number}
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm max-w-xs mx-auto">
-              <div className="bg-white rounded-xl p-3 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Status</p>
-                <p className="font-bold capitalize">{myToken.status.replace('_', ' ')}</p>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-xs">
+                <p className="text-xs text-slate-600 font-medium mb-1">Status</p>
+                <p className="font-bold text-slate-900 capitalize">{myToken.status.replace('_', ' ')}</p>
               </div>
-              <div className="bg-white rounded-xl p-3 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Farmers Ahead</p>
-                <p className="font-bold text-2xl text-amber-600">{myToken.farmers_ahead ?? 0}</p>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-xs">
+                <p className="text-xs text-slate-600 font-medium mb-1">Farmers Ahead</p>
+                <p className="font-bold text-2xl text-amber-600">
+                  {myToken.status === 'PROCESSING' || myToken.status === 'CALLED' || myToken.status === 'COMPLETED'
+                    ? 0
+                    : (myToken.farmers_ahead ?? 0)}
+                </p>
               </div>
-              <div className="bg-white rounded-xl p-3 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Estimated Wait</p>
-                <p className="font-bold">{myToken.estimated_wait_minutes} min</p>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-xs">
+                <p className="text-xs text-slate-600 font-medium mb-1">Estimated Wait</p>
+                <p className="font-bold text-slate-900">
+                  {myToken.status === 'PROCESSING'
+                    ? 'Being Served'
+                    : myToken.status === 'CALLED'
+                    ? 'Proceed to Counter'
+                    : myToken.status === 'COMPLETED'
+                    ? 'Completed'
+                    : `${myToken.estimated_wait_minutes ?? 0} min`}
+                </p>
               </div>
-              <div className="bg-white rounded-xl p-3 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Queue Position</p>
-                <p className="font-bold">#{myToken.queue_position}</p>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-xs">
+                <p className="text-xs text-slate-600 font-medium mb-1">Queue Position</p>
+                <p className="font-bold text-slate-900">#{myToken.queue_position}</p>
               </div>
             </div>
 
@@ -129,6 +199,35 @@ function LiveQueueContent() {
                 🔔 PLEASE PROCEED TO THE COUNTER NOW!
               </div>
             )}
+
+            {myToken.status === 'PROCESSING' && (
+              <div className="mt-4 bg-purple-100 text-purple-800 border border-purple-200 rounded-xl py-2.5 px-4 font-bold text-sm flex items-center justify-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-600 animate-ping" />
+                <span>Procurement in progress — Produce being weighed & graded</span>
+              </div>
+            )}
+
+            {myToken.status === 'COMPLETED' && (
+              <div className="mt-4 bg-green-100 text-green-800 border border-green-200 rounded-xl py-2.5 px-4 font-bold text-sm">
+                ✅ Procurement complete & payment processed!
+              </div>
+            )}
+          </div>
+        )}
+
+        {!myToken && !fetching && (
+          <div className="bg-white rounded-2xl p-8 border border-gray-200 text-center shadow-xs">
+            <p className="text-4xl mb-3">🎫</p>
+            <h3 className="font-bold text-gray-900 text-lg mb-1">No Active Queue Token</h3>
+            <p className="text-slate-600 text-sm mb-5 max-w-md mx-auto">
+              You do not have an active queue token for today. Book a procurement slot to get your digital queue token and live updates.
+            </p>
+            <button
+              onClick={() => router.push('/farmer/book-slot')}
+              className="bg-green-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-green-800 transition-colors shadow-xs"
+            >
+              Book a Slot →
+            </button>
           </div>
         )}
 
@@ -137,21 +236,21 @@ function LiveQueueContent() {
           <div className="bg-white rounded-2xl p-5 border border-gray-200">
             <h3 className="font-bold text-gray-900 mb-4">Queue Status</h3>
             <div className="grid grid-cols-4 gap-3 text-center text-sm">
-              <div className="bg-green-50 rounded-xl p-3">
-                <p className="text-xs text-gray-500">Now Processing</p>
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                <p className="text-xs text-slate-600 font-medium">Now Processing</p>
                 <p className="font-extrabold text-xl font-mono text-green-800">{queueStatus.current_token || '—'}</p>
               </div>
-              <div className="bg-amber-50 rounded-xl p-3">
-                <p className="text-xs text-gray-500">Waiting</p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <p className="text-xs text-slate-600 font-medium">Waiting</p>
                 <p className="font-extrabold text-xl text-amber-600">{queueStatus.waiting_count}</p>
               </div>
-              <div className="bg-blue-50 rounded-xl p-3">
-                <p className="text-xs text-gray-500">Processing</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <p className="text-xs text-slate-600 font-medium">Processing</p>
                 <p className="font-extrabold text-xl text-blue-700">{queueStatus.processing_count}</p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-xs text-gray-500">Completed</p>
-                <p className="font-extrabold text-xl text-gray-700">{queueStatus.completed_today}</p>
+              <div className="bg-slate-100 border border-slate-200 rounded-xl p-3">
+                <p className="text-xs text-slate-600 font-medium">Completed</p>
+                <p className="font-extrabold text-xl text-slate-700">{queueStatus.completed_today}</p>
               </div>
             </div>
           </div>
@@ -165,14 +264,14 @@ function LiveQueueContent() {
               {queueStatus.queue.slice(0, 10).map((t: any, i: number) => (
                 <div
                   key={t.id}
-                  className={`flex items-center justify-between py-2 px-3 rounded-xl text-sm ${myToken?.token_number === t.token_number ? 'bg-green-100 border border-green-300' : 'bg-gray-50'}`}
+                  className={`flex items-center justify-between py-2.5 px-3 rounded-xl text-sm border ${myToken?.token_number === t.token_number ? 'bg-green-100 border-green-300' : 'bg-slate-50 border-slate-200'}`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-base w-12">{t.token_number}</span>
-                    {myToken?.token_number === t.token_number && <span className="text-xs bg-green-700 text-white px-1.5 py-0.5 rounded">YOU</span>}
-                    <span className="text-gray-600">{t.farmer_name || 'Farmer'}</span>
+                    <span className="font-mono font-bold text-base w-14 text-slate-900">{t.token_number}</span>
+                    {myToken?.token_number === t.token_number && <span className="text-xs bg-green-700 text-white font-bold px-1.5 py-0.5 rounded">YOU</span>}
+                    <span className="text-slate-800 font-medium">{t.farmer_name || 'Farmer'}</span>
                   </div>
-                  <span className="text-xs text-gray-400">~{t.estimated_wait_minutes} min</span>
+                  <span className="text-xs text-slate-600 font-semibold">~{t.estimated_wait_minutes} min</span>
                 </div>
               ))}
             </div>
