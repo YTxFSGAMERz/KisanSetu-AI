@@ -4,11 +4,22 @@ import { dbStore, CROPS } from '@/lib/server-store';
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const bookingId = url.searchParams.get('booking_id');
+  const centreId = url.searchParams.get('centre_id');
 
   let results = [...dbStore.procurements];
   if (bookingId) {
     results = results.filter(p => p.booking_id === Number(bookingId));
   }
+  if (centreId) {
+    const cid = Number(centreId);
+    const centreBookings = new Set(
+      dbStore.bookings.filter(b => b.centre_id === cid).map(b => b.id)
+    );
+    results = results.filter(p => centreBookings.has(p.booking_id) || (cid === 1 && (!p.centre_name || p.centre_name.includes('Karnal'))));
+  }
+
+  // Always return newest first
+  results.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
   return NextResponse.json(results);
 }
@@ -24,6 +35,11 @@ export async function POST(req: Request) {
       quality_grade = 'GRADE_A',
       notes,
     } = body;
+
+    const existing = dbStore.procurements.find(p => p.booking_id === Number(booking_id));
+    if (existing) {
+      return NextResponse.json({ detail: "Procurement record already exists for this booking" }, { status: 409 });
+    }
 
     const booking = dbStore.bookings.find(b => b.id === Number(booking_id)) || dbStore.bookings[0];
     const crop = CROPS.find(c => c.id === booking.crop_id) || CROPS[0];
@@ -70,8 +86,13 @@ export async function POST(req: Request) {
     };
     dbStore.payments.unshift(newPayment);
 
-    // Update booking status
+    // Update booking status and complete queue token
     booking.booking_status = 'COMPLETED';
+    const queueTok = dbStore.queue_tokens.find(t => t.booking_id === booking.id || t.id === booking.id);
+    if (queueTok) {
+      queueTok.status = 'COMPLETED';
+      queueTok.completed_at = new Date().toISOString();
+    }
 
     return NextResponse.json(newProcurement, { status: 201 });
   } catch (error: any) {
