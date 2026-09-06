@@ -18,6 +18,10 @@ class PaymentResponse(BaseModel):
     crop_name: Optional[str] = None
     centre_name: Optional[str] = None
     receipt_number: Optional[str] = None
+    accepted_quantity: Optional[float] = None
+    quality_grade: Optional[str] = None
+    farmer_name: Optional[str] = None
+    booking_number: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

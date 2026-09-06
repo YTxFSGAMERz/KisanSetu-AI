@@ -12,6 +12,7 @@ from app.models.queue_token import QueueToken, TokenStatus
 from app.models.procurement import Procurement, ProcurementStatus, QualityGrade
 from app.models.payment import Payment, PaymentStatus
 from app.models.notification import Notification, NotificationType, NotificationChannel
+from app.models.otp_record import OTPRecord
 
 __all__ = [
     "User", "UserRole",
@@ -24,4 +25,5 @@ __all__ = [
     "Procurement", "ProcurementStatus", "QualityGrade",
     "Payment", "PaymentStatus",
     "Notification", "NotificationType", "NotificationChannel",
+    "OTPRecord",
 ]

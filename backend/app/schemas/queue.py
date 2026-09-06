@@ -29,6 +29,7 @@ class QueueTokenResponse(BaseModel):
 class QueueStatusResponse(BaseModel):
     centre_id: int
     current_token: Optional[str] = None  # token number being processed
+    active_token: Optional[QueueTokenResponse] = None
     waiting_count: int
     processing_count: int
     completed_today: int
