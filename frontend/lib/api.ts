@@ -33,6 +33,12 @@ async function request<T>(
     });
 
     if (!response.ok) {
+      // If token is invalid or expired, purge it from storage so client isn't stuck in 401 loop
+      if (response.status === 401 && typeof window !== 'undefined') {
+        localStorage.removeItem('kisansetu_token');
+        localStorage.removeItem('kisansetu_user');
+      }
+
       // If backend threw 502/521/500 and API_BASE was configured, trigger fallback
       if (API_BASE && response.status >= 500) {
         throw new Error(`SERVER_ERROR_${response.status}`);
@@ -185,6 +191,10 @@ export const queueApi = {
     request<any>(`/queue/${tokenId}/skip`, { method: 'POST' }),
   noShow: (tokenId: number) =>
     request<any>(`/queue/${tokenId}/no-show`, { method: 'POST' }),
+  addFarmers: (centreId: number, count = 10) =>
+    request<any>(`/queue/add-farmers?centre_id=${centreId}&count=${count}`, { method: 'POST' }),
+  reset: (centreId: number) =>
+    request<any>(`/queue/reset?centre_id=${centreId}`, { method: 'POST' }),
 };
 
 // ─── Procurement API ─────────────────────────────────────────────────────────
@@ -192,6 +202,8 @@ export const queueApi = {
 export const procurementsApi = {
   create: (data: any) =>
     request<any>('/procurements', { method: 'POST', body: JSON.stringify(data) }),
+  list: (centreId?: number) =>
+    request<any[]>(`/procurements${centreId ? `?centre_id=${centreId}` : ''}`),
   my: () => request<any[]>('/procurements/my'),
   get: (id: number) => request<any>(`/procurements/${id}`),
   update: (id: number, data: any) =>
