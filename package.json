@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "KisanSetu AI — Smart Procurement Management Platform | SIH 26032",
   "scripts": {
+    "start": "start.bat",
+    "stop": "stop.bat",
     "dev:frontend": "cd frontend && npm run dev",
     "build:frontend": "cd frontend && npm run build",
     "supabase:login": "supabase login",
