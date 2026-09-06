@@ -1,0 +1,68 @@
+{
+  "_note": "Populated by download scripts. Do not edit manually.",
+  "_last_run": {
+    "timestamp": "2026-09-04T11:40:34.277706+00:00",
+    "elapsed_seconds": 4.2,
+    "results": {
+      "agmarknet": "SUCCESS",
+      "msp": "SUCCESS",
+      "fci": "SUCCESS",
+      "pincodes": "SUCCESS",
+      "enam": "SUCCESS"
+    }
+  },
+  "msp": {
+    "name": "Minimum Support Price (MSP) \u2014 CACP / UPAg",
+    "original_source": "https://cacp.dacnet.nic.in",
+    "alternate_source": "https://www.upag.gov.in",
+    "license": "Government Open Data License (GODL) v1.0",
+    "download_date": "2026-09-04T11:40:32.515324+00:00",
+    "status": "SUCCESS",
+    "upag_live_download": true,
+    "embedded_reference": true,
+    "local_dir": "data\\raw\\msp"
+  },
+  "fci": {
+    "name": "FCI State-wise Foodgrain Procurement Data",
+    "original_source": "https://fci.gov.in",
+    "alternate_source": "https://cfpp.nic.in",
+    "license": "Government Open Data License (GODL) v1.0",
+    "download_date": "2026-09-04T11:40:33.422022+00:00",
+    "status": "SUCCESS",
+    "upag_live": true,
+    "embedded_reference": true,
+    "local_dir": "data\\raw\\fci"
+  },
+  "pincodes": {
+    "name": "India Pincode Directory (Post Office / District / State)",
+    "original_source": "India Post, Department of Posts, Government of India",
+    "mirror_source": "https://github.com/dropdevrahul/pincodes-india",
+    "mirror_url": "https://raw.githubusercontent.com/dropdevrahul/pincodes-india/master/pincode.csv",
+    "license": "Government Open Data License (GODL) compatible",
+    "download_date": "2026-09-04T11:40:33.829312+00:00",
+    "status": "SUCCESS",
+    "local_file": "data\\raw\\pincodes\\pincode.csv",
+    "file_size_bytes": 23760720,
+    "pii_note": "Post office level only \u2014 no individual addresses"
+  },
+  "enam": {
+    "name": "eNAM Mandi Reference Data",
+    "original_source": "https://enam.gov.in",
+    "license": "Government Open Data License (GODL) v1.0",
+    "download_date": "2026-09-04T11:40:34.225591+00:00",
+    "status": "SUCCESS",
+    "record_count": 40,
+    "data_type": "MANDI_REFERENCE_DATA",
+    "pii_status": "NO_PII",
+    "note": "Curated reference list of major APMC/eNAM mandis. Not real-time operational data."
+  },
+  "agmarknet": {
+    "name": "Daily Market Prices of Commodity India (Agmarknet Mirror)",
+    "original_source": "https://agmarknet.gov.in",
+    "mirror_source": "https://www.kaggle.com/datasets/srinathankumar/daily-market-prices-of-commodity-india",
+    "download_date": "2026-09-04T11:40:30.225583+00:00",
+    "status": "SUCCESS",
+    "local_file": "data\\raw\\agmarknet\\daily_market_prices.csv",
+    "file_size_bytes": 193207
+  }
+}

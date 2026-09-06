@@ -1,0 +1,41 @@
+centre_reference_id,centre_name,state,district,source_platform,source_url,data_type
+ENAM-PB-001,Khanna (Ludhiana),Punjab,Ludhiana,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-PB-002,Amritsar,Punjab,Amritsar,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-PB-003,Patiala,Punjab,Patiala,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-PB-004,Ferozepur,Punjab,Ferozepur,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-PB-005,Barnala,Punjab,Barnala,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-HR-001,Karnal,Haryana,Karnal,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-HR-002,Ambala,Haryana,Ambala,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-HR-003,Hisar,Haryana,Hisar,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-HR-004,Sirsa,Haryana,Sirsa,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-HR-005,Kaithal,Haryana,Kaithal,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-HR-006,Fatehabad,Haryana,Fatehabad,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-MP-001,Indore (Choithram),Madhya Pradesh,Indore,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-MP-002,Bhopal,Madhya Pradesh,Bhopal,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-MP-003,Vidisha,Madhya Pradesh,Vidisha,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-MP-004,Sehore,Madhya Pradesh,Sehore,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-MP-005,Hoshangabad (Narmadapuram),Madhya Pradesh,Narmadapuram,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-UP-001,Lucknow,Uttar Pradesh,Lucknow,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-UP-002,Agra,Uttar Pradesh,Agra,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-UP-003,Kanpur,Uttar Pradesh,Kanpur,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-UP-004,Varanasi,Uttar Pradesh,Varanasi,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-UP-005,Bareilly,Uttar Pradesh,Bareilly,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-RJ-001,Sri Ganganagar,Rajasthan,Sri Ganganagar,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-RJ-002,Jaipur (Muhana),Rajasthan,Jaipur,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-RJ-003,Jodhpur,Rajasthan,Jodhpur,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-RJ-004,Bikaner,Rajasthan,Bikaner,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-MH-001,Lasalgaon (Nashik),Maharashtra,Nashik,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-MH-002,Pune (Gultekdi),Maharashtra,Pune,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-MH-003,Nagpur,Maharashtra,Nagpur,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-GJ-001,Unjha (Mehsana),Gujarat,Mehsana,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-GJ-002,Ahmedabad,Gujarat,Ahmedabad,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-GJ-003,Rajkot,Gujarat,Rajkot,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-TS-001,Nizamabad,Telangana,Nizamabad,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-TS-002,Warangal,Telangana,Warangal,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-TS-003,Karimnagar,Telangana,Karimnagar,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-KA-001,Gulbarga (Kalaburagi),Karnataka,Kalaburagi,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-KA-002,Bangalore (Yeshwantpur),Karnataka,Bengaluru Urban,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-CG-001,Raipur,Chhattisgarh,Raipur,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-CG-002,Bilaspur,Chhattisgarh,Bilaspur,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-AP-001,Guntur,Andhra Pradesh,Guntur,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA
+ENAM-AP-002,Kurnool,Andhra Pradesh,Kurnool,eNAM,https://enam.gov.in,MANDI_REFERENCE_DATA

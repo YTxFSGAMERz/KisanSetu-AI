@@ -1,0 +1,15 @@
+{
+  "simulation_notice": "SIMULATION RESULTS \u2014 Not real operational data",
+  "generated_at": "2026-09-04T11:41:58.978176+00:00",
+  "seed": 42,
+  "metrics": {
+    "wait_time_reduction_pct": 23.3,
+    "max_wait_reduction_pct": 0.6,
+    "avg_queue_reduction_pct": 22.6,
+    "max_queue_reduction_pct": 1.1,
+    "baseline_avg_wait_minutes": 241.3,
+    "kisansetu_avg_wait_minutes": 185.1,
+    "baseline_max_queue": 91,
+    "kisansetu_max_queue": 90
+  }
+}

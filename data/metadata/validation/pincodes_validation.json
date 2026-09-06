@@ -1,0 +1,13 @@
+{
+  "dataset": "India Pincode Reference",
+  "source": "India Post via GitHub mirror (dropdevrahul/pincodes-india)",
+  "original_source": "India Post, Dept of Posts, Government of India",
+  "raw_file": "pincode.csv",
+  "processed_at": "2026-09-04T11:31:27.284686+00:00",
+  "total_records": 3000,
+  "unique_states": 15,
+  "unique_districts": 329,
+  "priority_state_records": 3000,
+  "pii_note": "Post office level only \u2014 no individual addresses",
+  "data_quality": "GOOD"
+}

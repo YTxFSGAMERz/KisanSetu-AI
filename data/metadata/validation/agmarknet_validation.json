@@ -1,0 +1,54 @@
+{
+  "dataset": "Agmarknet Daily Mandi Prices (Kaggle Mirror)",
+  "original_source": "https://agmarknet.gov.in",
+  "mirror_source": "https://www.kaggle.com/datasets/srinathankumar/daily-market-prices-of-commodity-india",
+  "raw_file": "daily_market_prices.csv",
+  "processed_at": "2026-09-04T11:40:57.924615+00:00",
+  "total_records": 2093,
+  "unique_commodities": 12,
+  "commodities": [
+    "Bajra",
+    "Barley",
+    "Cotton",
+    "Gram",
+    "Maize",
+    "Moong",
+    "Mustard",
+    "Onion",
+    "Paddy",
+    "Soyabean",
+    "Tur",
+    "Wheat"
+  ],
+  "unique_states": 10,
+  "states": [
+    "Chhattisgarh",
+    "Gujarat",
+    "Haryana",
+    "Karnataka",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Punjab",
+    "Rajasthan",
+    "Telangana",
+    "Uttar Pradesh"
+  ],
+  "date_range": {
+    "min": "01/04/2024",
+    "max": "31/03/2025"
+  },
+  "null_counts": {
+    "date": 0,
+    "state": 0,
+    "district": 0,
+    "mandi_name": 0,
+    "commodity": 0,
+    "variety": 0,
+    "arrival_quantity": 0,
+    "min_price": 0,
+    "max_price": 0,
+    "modal_price": 0,
+    "source": 0
+  },
+  "data_quality": "GOOD"
+}

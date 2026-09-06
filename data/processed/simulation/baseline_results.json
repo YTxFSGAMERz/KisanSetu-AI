@@ -1,0 +1,21 @@
+{
+  "scenario": "BASELINE",
+  "simulation_notice": "SIMULATION RESULTS \u2014 Not real operational data",
+  "parameters": {
+    "n_farmers": 200,
+    "counters": 5,
+    "avg_processing_minutes": 20.0,
+    "operating_hours": "09:00\u201317:00",
+    "slot_capacity": 40
+  },
+  "results": {
+    "avg_wait_time_minutes": 241.3,
+    "max_wait_time_minutes": 362.0,
+    "avg_queue_length": 61.0,
+    "max_queue_length": 91,
+    "peak_window_time": "11:00",
+    "peak_avg_queue_length": 88.2,
+    "avg_slot_utilization_pct": 62.5,
+    "farmers_with_zero_wait_pct": 2.5
+  }
+}

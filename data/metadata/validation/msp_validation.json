@@ -1,0 +1,43 @@
+{
+  "dataset": "MSP Reference",
+  "source": "CACP / UPAg \u2014 Government of India",
+  "processed_at": "2026-09-04T11:31:10.161301+00:00",
+  "total_records": 46,
+  "unique_seasons": [
+    "2024-25",
+    "2025-26",
+    "2026-27"
+  ],
+  "unique_crops": [
+    "Bajra",
+    "Barley",
+    "Cotton (Long Staple)",
+    "Cotton (Medium Staple)",
+    "Gram",
+    "Groundnut",
+    "Jowar (Hybrid)",
+    "Jowar (Maldandi)",
+    "Maize",
+    "Masur (Lentil)",
+    "Moong",
+    "Nigerseed",
+    "Paddy (Common)",
+    "Paddy (Grade A)",
+    "Ragi",
+    "Rapeseed/Mustard",
+    "Safflower",
+    "Sesamum",
+    "Soyabean (Yellow)",
+    "Sunflower Seed",
+    "Tur (Arhar)",
+    "Urad",
+    "Wheat"
+  ],
+  "records_with_null_msp": 0,
+  "records_with_null_effective_date": 0,
+  "msp_range_inr_per_quintal": {
+    "min": 1735.0,
+    "max": 9267.0
+  },
+  "data_quality": "GOOD"
+}
