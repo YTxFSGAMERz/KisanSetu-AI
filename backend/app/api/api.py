@@ -13,6 +13,7 @@ from app.api.routes import (
     notifications,
     analytics,
     websocket,
+    crops,
 )
 
 api_router = APIRouter()
@@ -20,6 +21,7 @@ api_router = APIRouter()
 api_router.include_router(auth.router)
 api_router.include_router(farmers.router)
 api_router.include_router(centres.router)
+api_router.include_router(crops.router)
 api_router.include_router(slots.router)
 api_router.include_router(bookings.router)
 api_router.include_router(queue.router)
