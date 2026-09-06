@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server';
 import { dbStore, CENTRES } from '@/lib/server-store';
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const centreId = Number(url.searchParams.get('centre_id') || 1);
-  const centre = CENTRES.find(c => c.id === centreId) || CENTRES[0];
+/**
+ * GET /api/v1/queue/status/[centreId]
+ * Returns queue status for a specific centre.
+ */
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ centreId: string }> }
+) {
+  const { centreId } = await params;
+  const cId = Number(centreId) || 1;
+  const centre = CENTRES.find(c => c.id === cId) || CENTRES[0];
 
-  const tokens = dbStore.queue_tokens.filter(t => t.centre_id === centreId);
+  const tokens = dbStore.queue_tokens.filter(t => t.centre_id === cId);
   const waitingTokens = tokens.filter(t => t.status === 'WAITING');
-  // Order: prefer PROCESSING over CALLED, and prefer latest
   const activeToken = tokens.find(t => t.status === 'PROCESSING') || tokens.find(t => t.status === 'CALLED') || null;
   const processingTokens = tokens.filter(t => t.status === 'PROCESSING' || t.status === 'CALLED');
   const completedTokens = tokens.filter(t => t.status === 'COMPLETED');
@@ -23,8 +29,8 @@ export async function GET(req: Request) {
   else if (waitingCount > 3) congestionLevel = 'MODERATE';
 
   return NextResponse.json({
-    centre_id: centre.id,
-    centre_name: centre.name,
+    centre_id: cId,
+    centre_name: centre?.name || `Centre ${cId}`,
     total_in_queue: tokens.length,
     waiting_count: waitingCount,
     processing_count: processingTokens.length,
