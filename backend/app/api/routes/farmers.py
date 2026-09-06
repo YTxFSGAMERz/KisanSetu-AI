@@ -119,23 +119,37 @@ async def farmer_dashboard(
                 "farmers_ahead": farmers_ahead,
             }
 
-    # Recent procurements (last 5)
+    # Recent procurements (last 5) with full details
+    from app.models.crop import Crop
+    from app.models.centre import ProcurementCentre
+    from app.models.payment import Payment
+
     proc_result = await db.execute(
-        select(Procurement)
+        select(Procurement, Crop, Booking, ProcurementCentre, Payment)
         .join(Booking, Procurement.booking_id == Booking.id)
+        .join(Crop, Procurement.crop_id == Crop.id)
+        .join(ProcurementCentre, Booking.centre_id == ProcurementCentre.id)
+        .outerjoin(Payment, Payment.procurement_id == Procurement.id)
         .where(Booking.farmer_id == farmer.id)
         .order_by(Procurement.created_at.desc())
         .limit(5)
     )
     recent_procs = []
-    for proc in proc_result.scalars():
+    for proc, crop, bk, centre, pay in proc_result.all():
         recent_procs.append({
             "id": proc.id,
             "receipt_number": proc.receipt_number,
+            "j_form_number": proc.receipt_number,
             "status": proc.status.value,
+            "crop_name": crop.name if crop else "Produce",
+            "centre_name": centre.name if centre else "Procurement Mandi",
             "accepted_quantity": proc.accepted_quantity,
             "procurement_amount": proc.procurement_amount,
-            "created_at": str(proc.created_at),
+            "msp_rate": crop.msp_per_quintal if crop else None,
+            "quality_grade": proc.quality_grade.value if proc.quality_grade else "GRADE_A",
+            "created_at": proc.created_at.isoformat() if proc.created_at else None,
+            "payment_status": pay.status.value if pay else "COMPLETED",
+            "transaction_reference": pay.transaction_reference if pay else None,
         })
 
     # Unread notifications

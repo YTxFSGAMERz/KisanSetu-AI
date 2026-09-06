@@ -1,9 +1,9 @@
 """Authentication routes — register, login, OTP simulation, /me."""
 import secrets
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -16,6 +16,7 @@ from app.core.security import (
 from app.database.session import get_db
 from app.models.user import User, UserRole
 from app.models.farmer import Farmer
+from app.models.otp_record import OTPRecord
 from app.schemas.auth import (
     DemoLoginRequest,
     LoginRequest,
@@ -28,8 +29,7 @@ from app.schemas.auth import (
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# Simple in-memory OTP store for prototype (replace with Redis in production)
-_otp_store: dict[str, str] = {}
+OTP_EXPIRY_MINUTES = 10  # OTP valid for 10 minutes
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -223,12 +223,33 @@ async def demo_login(req: DemoLoginRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/otp/send", status_code=200)
 async def send_otp(req: OTPSendRequest, db: AsyncSession = Depends(get_db)):
-    """Sends OTP (uses DEMO_OTP env in dev/demo mode, provider in production)."""
-    otp = settings.DEMO_OTP
-    _otp_store[req.phone] = otp
+    """
+    Generate OTP and store in DB with 10-minute expiry.
+    In DEMO_MODE, also returns the OTP in the response for testing.
+    In production with SMS_API_KEY set, sends via MSG91.
+    """
+    # Clean up any old OTPs for this phone first
+    await db.execute(delete(OTPRecord).where(OTPRecord.phone == req.phone))
+
+    otp = settings.DEMO_OTP if settings.DEMO_MODE and settings.DEMO_OTP else secrets.token_digits(6)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRY_MINUTES)
+
+    record = OTPRecord(
+        phone=req.phone,
+        otp_code=otp,
+        expires_at=expires_at,
+        used=False,
+    )
+    db.add(record)
+    await db.flush()
+
     masked_phone = f"******{req.phone[-4:]}" if len(req.phone) >= 4 else req.phone
-    print(f"[OTP SERVICE] Dispatched OTP to {masked_phone}")
-    response = {"message": f"OTP sent to {masked_phone}"}
+
+    # Send SMS if provider is configured
+    from app.services.notification_service import send_otp_sms
+    await send_otp_sms(phone=req.phone, otp=otp)
+
+    response: dict = {"message": f"OTP sent to {masked_phone}"}
     if settings.DEBUG and settings.ENVIRONMENT != "production":
         response["demo_otp"] = otp
     return response
@@ -236,16 +257,35 @@ async def send_otp(req: OTPSendRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/otp/verify", response_model=TokenResponse)
 async def verify_otp(req: OTPVerifyRequest, db: AsyncSession = Depends(get_db)):
-    stored_otp = _otp_store.get(req.phone)
-    if not stored_otp or stored_otp != req.otp:
-        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+    """Verify OTP from DB, enforce expiry and single-use."""
+    now = datetime.now(timezone.utc)
 
-    result = await db.execute(select(User).where(User.phone == req.phone))
-    user = result.scalar_one_or_none()
+    result = await db.execute(
+        select(OTPRecord).where(
+            OTPRecord.phone == req.phone,
+            OTPRecord.used == False,  # noqa: E712
+        ).order_by(OTPRecord.created_at.desc()).limit(1)
+    )
+    record = result.scalar_one_or_none()
+
+    if not record:
+        raise HTTPException(status_code=400, detail="OTP not found. Please request a new OTP.")
+
+    if record.expires_at.replace(tzinfo=timezone.utc) < now:
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new OTP.")
+
+    if record.otp_code != req.otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    # Mark as used
+    record.used = True
+    await db.flush()
+
+    user_result = await db.execute(select(User).where(User.phone == req.phone))
+    user = user_result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="No account found for this phone number")
 
-    _otp_store.pop(req.phone, None)
     token = create_access_token({"sub": str(user.id), "role": user.role.value})
     return TokenResponse(
         access_token=token,
