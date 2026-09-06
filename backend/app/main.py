@@ -71,13 +71,14 @@ app = FastAPI(
 # Enterprise Security Headers
 app.add_middleware(SecurityHeadersMiddleware)
 
-# CORS — strict origin matching from environment
+# CORS — origin matching from environment
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Global Safe Exception Handler (prevents stack traces / DB internal leaks)

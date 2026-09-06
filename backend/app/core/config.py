@@ -57,10 +57,14 @@ class Settings(BaseSettings):
     DEMO_MODE: bool = Field(default_factory=lambda: os.getenv("DEMO_MODE", "true").lower() in ("true", "1", "yes"))
     DEMO_OTP: str = Field(default_factory=lambda: os.getenv("DEMO_OTP", ""))
 
-    # SMS Gateway Integration
+    # SMS Gateway Integration — MSG91 (India government-preferred)
     SMS_PROVIDER: str = Field(default_factory=lambda: os.getenv("SMS_PROVIDER", "SIMULATED"))
     SMS_API_KEY: str = Field(default_factory=lambda: os.getenv("SMS_API_KEY", ""))
     SMS_SENDER_ID: str = Field(default_factory=lambda: os.getenv("SMS_SENDER_ID", "KSTUAI"))
+    MSG91_AUTH_KEY: str = Field(default_factory=lambda: os.getenv("MSG91_AUTH_KEY", ""))
+    MSG91_OTP_TEMPLATE_ID: str = Field(default_factory=lambda: os.getenv("MSG91_OTP_TEMPLATE_ID", ""))
+    MSG91_BOOKING_TEMPLATE_ID: str = Field(default_factory=lambda: os.getenv("MSG91_BOOKING_TEMPLATE_ID", ""))
+    MSG91_PAYMENT_TEMPLATE_ID: str = Field(default_factory=lambda: os.getenv("MSG91_PAYMENT_TEMPLATE_ID", ""))
 
     # Demo Account Credentials (read strictly from env, no hardcoded fallbacks)
     DEMO_FARMER_EMAIL: str = Field(default_factory=lambda: os.getenv("DEMO_FARMER_EMAIL", "demo.farmer@example.com"))
