@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================================
 REM KisanSetu AI - Application Launcher
-REM Launches Backend (FastAPI) and Frontend (Next.js) in Windows Terminal
+REM Launches Backend (FastAPI), Frontend (Next.js), and Notifier Tray App
 REM ============================================================================
 
 title KisanSetu AI Launcher
@@ -9,6 +9,7 @@ title KisanSetu AI Launcher
 set "PROJECT_ROOT=%~dp0"
 set "BACKEND_DIR=%PROJECT_ROOT%backend"
 set "FRONTEND_DIR=%PROJECT_ROOT%frontend"
+set "NOTIFIER_DIR=%PROJECT_ROOT%kisansetu_notifier"
 
 echo ============================================================================
 echo   KisanSetu AI - Smart Procurement Management Platform
@@ -56,7 +57,20 @@ if not exist "%FRONTEND_DIR%\node_modules" (
     echo.
 )
 
-REM 5. Detect Python Virtual Environment (if available)
+REM 5. Auto-install Notifier dependencies (first run only)
+if not exist "%NOTIFIER_DIR%\_deps_installed" (
+    echo [*] Installing KisanSetu Notifier dependencies (one-time)...
+    python -m pip install -r "%NOTIFIER_DIR%\requirements.txt" --quiet
+    if errorlevel 1 (
+        echo [WARN] Notifier dependency install had issues. Tray app may not work.
+    ) else (
+        echo. > "%NOTIFIER_DIR%\_deps_installed"
+        echo [*] Notifier dependencies installed!
+    )
+    echo.
+)
+
+REM 6. Detect Python Virtual Environment (if available)
 set "VENV_ACTIVATE="
 if exist "%BACKEND_DIR%\venv\Scripts\activate.bat" (
     set "VENV_ACTIVATE=call "%BACKEND_DIR%\venv\Scripts\activate.bat" && "
@@ -68,16 +82,16 @@ if exist "%BACKEND_DIR%\venv\Scripts\activate.bat" (
     set "VENV_ACTIVATE=call "%PROJECT_ROOT%.venv\Scripts\activate.bat" && "
 )
 
-REM 6. Launch services via Windows Terminal (wt.exe) or Fallback
+REM 7. Launch services via Windows Terminal (wt.exe) or Fallback
 where wt.exe >nul 2>&1
 if errorlevel 1 goto :FALLBACK
 
 echo [*] Windows Terminal detected.
-echo [*] Opening Backend and Frontend side-by-side...
+echo [*] Opening Backend, Frontend, and Notifier...
 echo.
-echo     Left Pane  : Backend API (FastAPI)  -^> http://127.0.0.1:8000
-echo     Right Pane : Frontend UI (Next.js)  -^> http://localhost:3000
-echo     API Docs   : Swagger UI             -^> http://127.0.0.1:8000/docs
+echo     Left Pane  : Backend API (FastAPI)  -> http://127.0.0.1:8000
+echo     Right Pane : Frontend UI (Next.js)  -> http://localhost:3000
+echo     Notifier   : System Tray App (background, no window)
 echo.
 
 if /i "%~1"=="--tabs" (
@@ -85,7 +99,7 @@ if /i "%~1"=="--tabs" (
 ) else (
     wt.exe -w new --title "KisanSetu AI" -d "%BACKEND_DIR%" cmd /k "title KisanSetu Backend && echo ==================================================== && echo   KisanSetu AI - Backend Server (FastAPI) && echo   API Docs: http://127.0.0.1:8000/docs && echo ==================================================== && echo. && %VENV_ACTIVATE%python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000" ^; split-pane -V --title "KisanSetu Frontend" -d "%FRONTEND_DIR%" cmd /k "title KisanSetu Frontend && echo ==================================================== && echo   KisanSetu AI - Frontend Web App (Next.js) && echo   Web App:  http://localhost:3000 && echo ==================================================== && echo. && npm run dev"
 )
-goto :AFTER_LAUNCH
+goto :LAUNCH_NOTIFIER
 
 :FALLBACK
 echo [!] Windows Terminal (wt.exe) was not found.
@@ -94,8 +108,14 @@ echo.
 start "KisanSetu AI - Backend" /d "%BACKEND_DIR%" cmd /k "title KisanSetu Backend && echo Starting Backend... && %VENV_ACTIVATE%python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
 start "KisanSetu AI - Frontend" /d "%FRONTEND_DIR%" cmd /k "title KisanSetu Frontend && echo Starting Frontend... && npm run dev"
 
-:AFTER_LAUNCH
-REM 7. Browser launch (unless --no-browser is passed)
+:LAUNCH_NOTIFIER
+REM 8. Launch KisanSetu Notifier tray app in background
+REM    Wait 4 seconds for the backend to be ready, then start the notifier.
+REM    It runs silently (pythonw = no console window) — just a tray icon appears.
+echo [*] Scheduling KisanSetu Notifier tray app (starts in 8s once backend is ready)...
+start "" /min cmd /c "ping 127.0.0.1 -n 9 >nul && echo [Notifier] Starting KisanSetu Notifier... && pythonw "%NOTIFIER_DIR%\main.py" 2>"%NOTIFIER_DIR%\notifier.log""
+
+REM 9. Browser launch (unless --no-browser is passed)
 if /i not "%~1"=="--no-browser" if /i not "%~2"=="--no-browser" (
     echo [*] Opening browser at http://localhost:3000 shortly...
     start "" /min cmd /c "ping 127.0.0.1 -n 5 >nul & start http://localhost:3000"
@@ -103,5 +123,10 @@ if /i not "%~1"=="--no-browser" if /i not "%~2"=="--no-browser" (
 
 echo.
 echo [OK] All services initiated!
+echo      Backend  : http://127.0.0.1:8000
+echo      Frontend : http://localhost:3000
+echo      Notifier : Running in system tray (check taskbar bottom-right)
+echo      Log file : %NOTIFIER_DIR%\notifier.log
+echo.
 ping 127.0.0.1 -n 3 >nul
 exit /b 0

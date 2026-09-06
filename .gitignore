@@ -103,3 +103,7 @@ kaggle.json
 #            data/metadata/, docs/CONGESTION_REDUCTION_ANALYSIS.md
 
 .vercel
+
+# KisanSetu Notifier — auto-generated files
+kisansetu_notifier/_deps_installed
+kisansetu_notifier/notifier.log
