@@ -124,7 +124,7 @@ async def create_booking(
     # Generate queue token
     token = await queue_service.get_or_create_token(db, booking, req.centre_id)
 
-    # Send notifications
+    # Send notifications (pass farmer phone for real SMS)
     slot_time = f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}"
     await notification_service.notify_booking_confirmed(
         db,
@@ -134,6 +134,7 @@ async def create_booking(
         slot_time=slot_time,
         token_number=token.token_number,
         reference_id=booking.id,
+        phone=current_user.phone,  # ← real phone for SMS
     )
 
     return await _enrich_booking(booking, db)

@@ -39,4 +39,5 @@ async def mark_notifications_read(
         )
         .values(is_read=True)
     )
+    await db.commit()
     return {"marked_read": len(req.notification_ids)}

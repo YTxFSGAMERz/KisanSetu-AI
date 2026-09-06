@@ -128,6 +128,24 @@ async def create_procurement(
     return await _enrich_procurement(proc, db)
 
 
+@router.get("", response_model=list[ProcurementResponse])
+async def list_procurements(
+    centre_id: int | None = None,
+    booking_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Procurement).order_by(Procurement.created_at.desc())
+    if booking_id:
+        query = query.where(Procurement.booking_id == booking_id)
+    if centre_id:
+        query = query.join(Booking, Procurement.booking_id == Booking.id).where(Booking.centre_id == centre_id)
+
+    result = await db.execute(query)
+    procs = result.scalars().all()
+    return [await _enrich_procurement(p, db) for p in procs]
+
+
 @router.get("/my", response_model=list[ProcurementResponse])
 async def my_procurements(
     current_user: User = Depends(require_role(UserRole.FARMER)),
@@ -210,6 +228,10 @@ async def update_procurement(
                     notif_type=notification_service.NotificationType.PROCUREMENT_COMPLETED,
                     reference_id=proc.id,
                 )
+
+        # Automatically mark matching queue token completed
+        from app.services.queue_service import complete_token as mark_token_complete
+        await mark_token_complete(db, proc.booking_id)
 
     await db.flush()
     return await _enrich_procurement(proc, db)

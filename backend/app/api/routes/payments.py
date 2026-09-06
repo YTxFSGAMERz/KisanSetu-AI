@@ -36,18 +36,33 @@ async def _enrich_payment(payment: Payment, db: AsyncSession) -> PaymentResponse
     crop_name = None
     centre_name = None
     receipt_number = None
+    accepted_quantity = None
+    quality_grade = None
+    booking_number = None
+    farmer_name = None
+
     if proc:
         crop_result = await db.execute(select(Crop).where(Crop.id == proc.crop_id))
         crop = crop_result.scalar_one_or_none()
         crop_name = crop.name if crop else None
         receipt_number = proc.receipt_number
+        accepted_quantity = proc.accepted_quantity
+        quality_grade = proc.quality_grade.value if hasattr(proc.quality_grade, 'value') else str(proc.quality_grade)
 
         booking_result = await db.execute(select(Booking).where(Booking.id == proc.booking_id))
         booking = booking_result.scalar_one_or_none()
         if booking:
+            booking_number = booking.booking_number
             centre_result = await db.execute(select(ProcurementCentre).where(ProcurementCentre.id == booking.centre_id))
             centre = centre_result.scalar_one_or_none()
             centre_name = centre.name if centre else None
+
+            farmer_result = await db.execute(select(Farmer).where(Farmer.id == booking.farmer_id))
+            farmer = farmer_result.scalar_one_or_none()
+            if farmer:
+                user_res = await db.execute(select(User).where(User.id == farmer.user_id))
+                u = user_res.scalar_one_or_none()
+                farmer_name = u.name if u else None
 
     return PaymentResponse(
         id=payment.id,
@@ -61,6 +76,10 @@ async def _enrich_payment(payment: Payment, db: AsyncSession) -> PaymentResponse
         crop_name=crop_name,
         centre_name=centre_name,
         receipt_number=receipt_number,
+        accepted_quantity=accepted_quantity,
+        quality_grade=quality_grade,
+        farmer_name=farmer_name,
+        booking_number=booking_number,
     )
 
 

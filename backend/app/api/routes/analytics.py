@@ -115,8 +115,23 @@ async def admin_dashboard(
             )
         )
         centre_waiting = waiting_result.scalar() or 0
+        centre_completed = completed_today_result.scalar() or 0
+        centre_no_shows = no_show_result.scalar() or 0
+        centre_qty = float(qty_result.scalar() or 0.0)
+        centre_amt = float(amt_result.scalar() or 0.0)
+
+        # Real booking count today for congestion (not hardcoded half-capacity)
+        booked_today_result = await db.execute(
+            select(func.count(Booking.id)).where(
+                Booking.centre_id == centre.id,
+                Booking.booking_status.in_([BookingStatus.CONFIRMED, BookingStatus.COMPLETED]),
+                func.date(Booking.created_at) == today,
+            )
+        )
+        centre_booked_today = booked_today_result.scalar() or 0
+
         congestion = compute_congestion_score(
-            booked_count=centre.daily_capacity // 2,
+            booked_count=centre_booked_today,
             slot_capacity=centre.daily_capacity,
             active_queue_length=centre_waiting,
             daily_target=centre.daily_capacity,
@@ -127,16 +142,16 @@ async def admin_dashboard(
                 centre_id=centre.id,
                 centre_name=centre.name,
                 congestion_score=congestion,
-                farmers_today=completed_today_result.scalar() or 0,
-                completed_today=completed_today_result.scalar() or 0,
-                no_shows_today=no_show_result.scalar() or 0,
+                farmers_today=centre_completed,
+                completed_today=centre_completed,
+                no_shows_today=centre_no_shows,
                 avg_processing_minutes=centre.avg_processing_minutes,
-                total_quantity_kg=float(qty_result.scalar() or 0.0),
-                total_amount=float(amt_result.scalar() or 0.0),
+                total_quantity_kg=centre_qty,
+                total_amount=centre_amt,
             )
         )
 
-    # Daily volume chart (last 7 days)
+    # Daily volume chart (last 7 days — rolling from today)
     daily_chart = []
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
@@ -153,6 +168,11 @@ async def admin_dashboard(
             "count": int(row[1] or 0),
         })
 
+    # No-show rate: denominator includes both served AND no-show farmers
+    total_no_shows = sum(c.no_shows_today for c in centre_analytics)
+    total_interactions = served_today + total_no_shows
+    no_show_rate = round((total_no_shows / max(total_interactions, 1)) * 100, 1)
+
     return AdminDashboardResponse(
         total_active_centres=len(centres),
         total_registered_farmers=total_farmers,
@@ -162,9 +182,7 @@ async def admin_dashboard(
         payment_completion_rate=pay_rate,
         centres=centre_analytics,
         daily_volume_chart=daily_chart,
-        no_show_rate=round(
-            (sum(c.no_shows_today for c in centre_analytics) / max(served_today, 1)) * 100, 1
-        ),
+        no_show_rate=no_show_rate,
     )
 
 
