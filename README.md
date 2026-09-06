@@ -47,7 +47,23 @@ docker-compose.yml PostgreSQL + Backend + Frontend
 
 ## 🚀 Quick Start (Local Dev — No Docker Needed)
 
-### Backend
+### ⚡ One-Click Windows Terminal Launcher
+
+Double-click `start.bat` in File Explorer or run:
+```powershell
+.\start.bat
+```
+*(Or `npm start`). This automatically validates prerequisites, auto-seeds the SQLite database if missing, opens **FastAPI backend** and **Next.js frontend** side-by-side in **Windows Terminal**, and opens `http://localhost:3000` in your browser.*
+
+- **Separate Tabs**: `.\start.bat --tabs`
+- **Without opening browser**: `.\start.bat --no-browser`
+- **Stop all running services**: `.\stop.bat` (or `npm stop`)
+
+---
+
+### Manual Launch
+
+#### Backend
 
 ```powershell
 cd backend

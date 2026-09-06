@@ -82,3 +82,22 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# ============================================================
+# Data Pipeline — KisanSetu AI
+# ============================================================
+# Never commit large raw downloads
+data/raw/
+
+# Never commit large parquet files
+data/processed/**/*.parquet
+
+# Never commit synthetic demo outputs (can be regenerated)
+data/processed/synthetic/
+
+# Kaggle credentials
+kaggle.json
+.kaggle/
+
+# DO commit: scripts/, data/samples/, data/processed/**/*.csv,
+#            data/metadata/, docs/CONGESTION_REDUCTION_ANALYSIS.md
