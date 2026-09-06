@@ -87,6 +87,28 @@ function createMockToken(user: AuthUser): string {
 
 function decodeMockToken(token: string): Partial<AuthUser> | null {
   try {
+    // 1. Check if standard JWT (3 parts separated by .)
+    if (token.includes('.')) {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const base64Url = parts[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        const data = JSON.parse(jsonPayload);
+        return {
+          id: data.id ? Number(data.id) : (data.sub && !isNaN(Number(data.sub)) ? Number(data.sub) : undefined),
+          email: data.email || (data.sub?.includes('@') ? data.sub : undefined),
+          role: data.role,
+          name: data.name,
+        };
+      }
+    }
+    // 2. Base64 JSON token
     const raw = decodeURIComponent(escape(atob(token)));
     const data = JSON.parse(raw);
     return {
@@ -128,21 +150,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: decoded.id || fallbackUser.id,
           name: decoded.name || fallbackUser.name,
           email: decoded.email || fallbackUser.email,
-          role: decoded.role as any || fallbackUser.role,
+          role: (decoded.role as any) || fallbackUser.role,
         });
       }
 
       authApi.me()
-        .then(u => setUser(u as AuthUser))
+        .then(u => {
+          if (u) setUser(u as AuthUser);
+        })
         .catch((err) => {
-          // If server explicitly returns 401 Unauthorized, token is expired/invalid
-          const msg = err?.message || '';
-          if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
+          const msg = (err?.message || '').toLowerCase();
+          // If server returns 401 or token is invalid/expired, purge the dead session
+          if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('invalid or expired')) {
             localStorage.removeItem('kisansetu_token');
+            localStorage.removeItem('kisansetu_user');
             setToken(null);
             setUser(null);
           }
-          // If it's a network error (Supabase 502/521 down), keep the session!
+          // If network failed (e.g. offline/Supabase 502), keep the decoded session active
         })
         .finally(() => setLoading(false));
     } else {
@@ -165,14 +190,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (matchedKey) {
       const demoUser = DEMO_USERS[matchedKey];
-      const demoToken = createMockToken(demoUser);
-      localStorage.setItem('kisansetu_token', demoToken);
-      setToken(demoToken);
-      setUser(demoUser);
-
-      // Fire and forget server login to sync if server is online
-      authApi.login(email, password).catch(() => {});
-      return;
+      try {
+        const data = await authApi.login(email, password);
+        localStorage.setItem('kisansetu_token', data.access_token);
+        setToken(data.access_token);
+        setUser({
+          ...demoUser,
+          id: data.user_id || demoUser.id,
+          name: data.name || demoUser.name,
+        });
+        return;
+      } catch {
+        const demoToken = createMockToken(demoUser);
+        localStorage.setItem('kisansetu_token', demoToken);
+        setToken(demoToken);
+        setUser(demoUser);
+        return;
+      }
     }
 
     // 2. Regular API login for non-demo users
@@ -203,15 +237,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const demoLogin = async (role: 'farmer' | 'officer' | 'admin') => {
     const demoUser = DEMO_USERS[role] || DEMO_USERS.farmer;
-    const demoToken = createMockToken(demoUser);
-    
-    // Instantly persist and activate session without network delay or dependency
-    localStorage.setItem('kisansetu_token', demoToken);
-    setToken(demoToken);
-    setUser(demoUser);
-
-    // Optional non-blocking background sync
-    authApi.demoLogin(demoUser.role).catch(() => {});
+    try {
+      const data = await authApi.demoLogin(demoUser.role);
+      localStorage.setItem('kisansetu_token', data.access_token);
+      setToken(data.access_token);
+      setUser({
+        ...demoUser,
+        id: data.user_id || demoUser.id,
+        name: data.name || demoUser.name,
+      });
+    } catch {
+      const demoToken = createMockToken(demoUser);
+      localStorage.setItem('kisansetu_token', demoToken);
+      setToken(demoToken);
+      setUser(demoUser);
+    }
   };
 
   const logout = () => {

@@ -1,47 +1,40 @@
 import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { signToken } from '@/lib/jwt';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email } = body;
+    const { email, password } = body;
 
-    let role = 'FARMER';
-    let fullName = 'Rajesh Verma (Kisan)';
-    let id = 1;
-    let centre_id = undefined;
+    // Look up user in the DB store
+    const users = db.getState().users;
+    const user = users.find((u: any) =>
+      u.email?.toLowerCase() === email?.toLowerCase()
+    );
 
-    if (email?.includes('officer')) {
-      role = 'PROCUREMENT_OFFICER';
-      fullName = 'Anil Kumar (Mandi Officer)';
-      id = 2;
-      centre_id = 1;
-    } else if (email?.includes('admin')) {
-      role = 'GOVERNMENT_ADMIN';
-      fullName = 'Dr. Ramesh Sharma (Director, DoCA)';
-      id = 3;
+    if (!user) {
+      return NextResponse.json({ detail: 'Invalid email or password' }, { status: 401 });
     }
 
-    const user = {
-      id,
-      email: email || 'farmer@kisansetu.in',
-      phone: '9876543210',
-      name: fullName,
-      full_name: fullName,
-      role,
-      farmer_id: role === 'FARMER' ? 1 : undefined,
-      centre_id,
-      is_active: true,
-    };
+    // In the serverless fallback, passwords are stored as plain text in seed.json
+    // In production, this should use bcrypt — but the real backend handles that
+    if (user.password && password && user.password !== password) {
+      return NextResponse.json({ detail: 'Invalid email or password' }, { status: 401 });
+    }
 
-    const token = Buffer.from(JSON.stringify({ sub: user.email, role: user.role, id: user.id, name: user.name })).toString('base64');
+    const token = await signToken({
+      sub: String(user.id),
+      role: user.role,
+      name: user.name || user.full_name,
+    });
 
     return NextResponse.json({
       access_token: token,
       token_type: 'bearer',
       user_id: user.id,
       role: user.role,
-      name: user.name,
-      user,
+      name: user.name || user.full_name,
     });
   } catch (error: any) {
     return NextResponse.json({ detail: error.message || 'Login failed' }, { status: 400 });

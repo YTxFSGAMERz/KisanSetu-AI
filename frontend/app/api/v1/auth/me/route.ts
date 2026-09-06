@@ -1,43 +1,48 @@
 import { NextResponse } from 'next/server';
+import { verifyToken, extractBearerToken } from '@/lib/jwt';
+import { db } from '@/lib/db';
 
 export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization');
-  if (!authHeader) {
+  const rawToken = extractBearerToken(authHeader);
+
+  if (!rawToken) {
     return NextResponse.json({ detail: 'Not authenticated' }, { status: 401 });
   }
 
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
-    
-    const role = decoded.role || 'FARMER';
-    const fullName = role === 'PROCUREMENT_OFFICER' || role === 'OFFICER'
-      ? 'Anil Kumar (Mandi Officer)' 
-      : role === 'GOVERNMENT_ADMIN' || role === 'ADMIN'
-      ? 'Dr. Ramesh Sharma (Director, DoCA)' 
-      : 'Rajesh Verma (Kisan)';
+  // Verify the real JWT
+  const payload = await verifyToken(rawToken);
+  if (!payload) {
+    return NextResponse.json({ detail: 'Invalid or expired token' }, { status: 401 });
+  }
 
+  // Look up user from store using sub (user ID)
+  const userId = Number(payload.sub);
+  const users = db.getState().users;
+  const user = users.find((u: any) => u.id === userId);
+
+  if (user) {
     return NextResponse.json({
-      id: decoded.id || 1,
-      email: decoded.sub || 'farmer@kisansetu.in',
-      phone: '9876543210',
-      name: fullName,
-      full_name: fullName,
-      role: role === 'OFFICER' ? 'PROCUREMENT_OFFICER' : role === 'ADMIN' ? 'GOVERNMENT_ADMIN' : role,
-      farmer_id: role === 'FARMER' ? 1 : undefined,
-      centre_id: role === 'PROCUREMENT_OFFICER' || role === 'OFFICER' ? 1 : undefined,
-      is_active: true,
-    });
-  } catch {
-    return NextResponse.json({
-      id: 1,
-      email: 'farmer@kisansetu.in',
-      phone: '9876543210',
-      name: 'Rajesh Verma (Kisan)',
-      full_name: 'Rajesh Verma (Kisan)',
-      role: 'FARMER',
-      farmer_id: 1,
-      is_active: true,
+      id: user.id,
+      email: user.email,
+      phone: user.phone || '9876543210',
+      name: user.name || user.full_name,
+      role: user.role,
+      farmer_id: user.role === 'FARMER' ? user.farmer_id || 1 : undefined,
+      centre_id: user.centre_id,
+      is_active: user.is_active !== false,
     });
   }
+
+  // Fallback: build response from JWT payload (for demo users not in store)
+  return NextResponse.json({
+    id: userId,
+    email: `demo.${payload.role.toLowerCase().replace('_', '.')}@example.com`,
+    phone: '9876543210',
+    name: payload.name,
+    role: payload.role,
+    farmer_id: payload.role === 'FARMER' ? 1 : undefined,
+    centre_id: payload.role === 'PROCUREMENT_OFFICER' ? 1 : undefined,
+    is_active: true,
+  });
 }
