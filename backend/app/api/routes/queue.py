@@ -1,6 +1,6 @@
 """Queue management routes — officer controls and farmer live tracking."""
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_user, require_role
@@ -106,10 +106,18 @@ async def get_queue_status(
         )
     )
     current_result = await db.execute(
-        select(QueueToken).where(
+        select(QueueToken)
+        .where(
             QueueToken.centre_id == centre_id,
-            QueueToken.status.in_([TokenStatus.CALLED, TokenStatus.PROCESSING]),
-        ).limit(1)
+            QueueToken.status.in_([TokenStatus.PROCESSING, TokenStatus.CALLED]),
+        )
+        .order_by(
+            case((QueueToken.status == TokenStatus.PROCESSING, 1), else_=2),
+            QueueToken.processing_start_time.desc().nullslast(),
+            QueueToken.called_at.desc().nullslast(),
+            QueueToken.id.desc(),
+        )
+        .limit(1)
     )
     current_token = current_result.scalar_one_or_none()
 
@@ -125,10 +133,12 @@ async def get_queue_status(
     )
     waiting_tokens = queue_result.scalars().all()
     enriched_queue = [await _enrich_token(t, db) for t in waiting_tokens]
+    enriched_active = await _enrich_token(current_token, db) if current_token else None
 
     return QueueStatusResponse(
         centre_id=centre_id,
         current_token=current_token.token_number if current_token else None,
+        active_token=enriched_active,
         waiting_count=waiting_result.scalar() or 0,
         processing_count=processing_result.scalar() or 0,
         completed_today=completed_result.scalar() or 0,
@@ -184,7 +194,7 @@ async def start_procurement_for_token(
 ):
     token = await queue_service.start_processing(db, token_id)
     if not token:
-        raise HTTPException(status_code=400, detail="Token must be in CALLED state to start processing")
+        raise HTTPException(status_code=400, detail="Token must be in WAITING or CALLED state to start processing")
     return await _enrich_token(token, db)
 
 
@@ -196,7 +206,7 @@ async def complete_token(
 ):
     token = await queue_service.complete_token(db, token_id)
     if not token:
-        raise HTTPException(status_code=400, detail="Token must be in PROCESSING state to complete")
+        raise HTTPException(status_code=404, detail="Token not found")
     return await _enrich_token(token, db)
 
 
@@ -222,3 +232,102 @@ async def mark_no_show(
     if not token:
         raise HTTPException(status_code=404, detail="Token not found")
     return await _enrich_token(token, db)
+
+
+@router.post("/add-farmers")
+async def add_farmers(
+    centre_id: int = Query(...),
+    count: int = Query(10),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(*OFFICER_ROLES)),
+):
+    """Add a fresh batch of farmers to the queue for testing/mandi operations."""
+    from app.models.farmer import Farmer
+    from app.models.crop import Crop
+    from app.models.slot import Slot
+
+    farmers_res = await db.execute(select(Farmer).limit(20))
+    farmers = farmers_res.scalars().all()
+    crops_res = await db.execute(select(Crop).limit(10))
+    crops = crops_res.scalars().all()
+    slot_res = await db.execute(select(Slot).where(Slot.centre_id == centre_id).limit(1))
+    slot = slot_res.scalar_one_or_none()
+
+    if not farmers or not crops or not slot:
+        raise HTTPException(status_code=400, detail="Prerequisites not met")
+
+    # Get current highest token number
+    tokens_res = await db.execute(
+        select(QueueToken.token_number).where(QueueToken.centre_id == centre_id)
+    )
+    existing_tokens = tokens_res.scalars().all()
+    highest_num = 0
+    import re
+    for tn in existing_tokens:
+        m = re.search(r'\d+', tn)
+        if m:
+            highest_num = max(highest_num, int(m.group(0)))
+
+    waiting_res = await db.execute(
+        select(func.count(QueueToken.id)).where(
+            QueueToken.centre_id == centre_id, QueueToken.status == TokenStatus.WAITING
+        )
+    )
+    current_waiting = waiting_res.scalar() or 0
+
+    added = []
+    now = datetime.now(timezone.utc)
+    for i in range(min(count, 20)):
+        highest_num += 1
+        tok_num = f"A{highest_num:03d}"
+        farmer = farmers[(highest_num - 1) % len(farmers)]
+        crop = crops[(highest_num - 1) % len(crops)]
+        qty = [30.0, 35.0, 40.0, 45.0, 50.0][(highest_num - 1) % 5]
+
+        bk = Booking(
+            farmer_id=farmer.id,
+            centre_id=centre_id,
+            slot_id=slot.id,
+            crop_id=crop.id,
+            expected_quantity=qty,
+            booking_number=f"BK-KNL-2026-{random.randint(1000, 9999)}",
+            booking_status=BookingStatus.CONFIRMED,
+            notes=f"{crop.name} {qty} Qtl",
+            created_at=now,
+        )
+        db.add(bk)
+        await db.flush()
+
+        tok = QueueToken(
+            booking_id=bk.id,
+            centre_id=centre_id,
+            token_number=tok_num,
+            queue_position=current_waiting + i + 1,
+            status=TokenStatus.WAITING,
+            estimated_wait_minutes=(current_waiting + i + 1) * 15.0,
+            arrival_time=now,
+        )
+        db.add(tok)
+        await db.flush()
+        added.append(tok_num)
+
+    await queue_service._broadcast_queue_state(db, centre_id)
+    return {"success": True, "added_tokens": added}
+
+
+@router.post("/reset")
+async def reset_queue(
+    centre_id: int = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(*OFFICER_ROLES)),
+):
+    """Reset all tokens for this centre back to WAITING."""
+    await db.execute(
+        update(QueueToken)
+        .where(QueueToken.centre_id == centre_id)
+        .values(status=TokenStatus.WAITING, called_at=None, processing_start_time=None, completed_at=None)
+    )
+    await db.commit()
+    await queue_service._broadcast_queue_state(db, centre_id)
+    return {"success": True, "message": "Queue reset to WAITING"}
+

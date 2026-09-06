@@ -6,7 +6,7 @@ import random
 import string
 from datetime import date, datetime, timezone
 
-from sqlalchemy import func, select, update
+from sqlalchemy import case, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking, BookingStatus
@@ -97,25 +97,49 @@ async def call_next_token(db: AsyncSession, centre_id: int) -> QueueToken | None
     token.called_at = datetime.now(timezone.utc)
     await db.flush()
 
-    # Broadcast queue update
+    # Broadcast queue update to all officer/display screens
     await _broadcast_queue_state(db, centre_id)
 
     # Targeted notification to the specific farmer
+    # FIX: Explicitly query Farmer + User (async lazy-load of booking.farmer FAILS silently)
+    from app.models.farmer import Farmer
+    from app.models.user import User
+
     booking_result = await db.execute(
         select(Booking).where(Booking.id == token.booking_id)
     )
     booking = booking_result.scalar_one_or_none()
     if booking:
-        farmer_user_id = booking.farmer.user_id if booking.farmer else None
-        if farmer_user_id:
+        farmer_result = await db.execute(
+            select(Farmer).where(Farmer.id == booking.farmer_id)
+        )
+        farmer = farmer_result.scalar_one_or_none()
+        if farmer:
+            # Send WebSocket push to the farmer's connected browser/app
             await manager.send_to_user(
-                farmer_user_id,
+                farmer.user_id,
                 QueueEvent.FARMER_CALLED,
                 {
                     "token_number": token.token_number,
-                    "message": f"🔔 Token {token.token_number} — Please proceed to the counter!",
+                    "message": f"🔔 Token {token.token_number} — Please proceed to the counter immediately!",
                 },
             )
+
+            # Also send SMS notification to farmer
+            user_result = await db.execute(
+                select(User).where(User.id == farmer.user_id)
+            )
+            user = user_result.scalar_one_or_none()
+            if user:
+                from app.services.notification_service import notify_farmer_called
+                await notify_farmer_called(
+                    db,
+                    user_id=user.id,
+                    token_number=token.token_number,
+                    centre_name=f"Centre {centre_id}",
+                    reference_id=token.id,
+                    phone=user.phone,  # ← real phone for SMS
+                )
 
     return token
 
@@ -123,20 +147,30 @@ async def call_next_token(db: AsyncSession, centre_id: int) -> QueueToken | None
 async def start_processing(db: AsyncSession, token_id: int) -> QueueToken | None:
     result = await db.execute(select(QueueToken).where(QueueToken.id == token_id))
     token = result.scalar_one_or_none()
-    if not token or token.status != TokenStatus.CALLED:
+    if not token or token.status not in (TokenStatus.CALLED, TokenStatus.WAITING, TokenStatus.PROCESSING):
         return None
-    token.status = TokenStatus.PROCESSING
-    token.processing_start_time = datetime.now(timezone.utc)
-    await db.flush()
-    await _broadcast_queue_state(db, token.centre_id)
+    if not token.called_at:
+        token.called_at = datetime.now(timezone.utc)
+    if token.status != TokenStatus.PROCESSING:
+        token.status = TokenStatus.PROCESSING
+        token.processing_start_time = datetime.now(timezone.utc)
+        await db.flush()
+        await _broadcast_queue_state(db, token.centre_id)
     return token
 
 
 async def complete_token(db: AsyncSession, token_id: int) -> QueueToken | None:
-    result = await db.execute(select(QueueToken).where(QueueToken.id == token_id))
+    result = await db.execute(
+        select(QueueToken).where(
+            (QueueToken.id == token_id) | (QueueToken.booking_id == token_id)
+        )
+    )
     token = result.scalar_one_or_none()
-    if not token or token.status != TokenStatus.PROCESSING:
+    if not token:
         return None
+    if token.status == TokenStatus.COMPLETED:
+        return token
+
     token.status = TokenStatus.COMPLETED
     token.completed_at = datetime.now(timezone.utc)
 
@@ -152,7 +186,11 @@ async def complete_token(db: AsyncSession, token_id: int) -> QueueToken | None:
 
 
 async def skip_token(db: AsyncSession, token_id: int) -> QueueToken | None:
-    result = await db.execute(select(QueueToken).where(QueueToken.id == token_id))
+    result = await db.execute(
+        select(QueueToken).where(
+            (QueueToken.id == token_id) | (QueueToken.booking_id == token_id)
+        )
+    )
     token = result.scalar_one_or_none()
     if not token:
         return None
@@ -163,7 +201,11 @@ async def skip_token(db: AsyncSession, token_id: int) -> QueueToken | None:
 
 
 async def mark_no_show(db: AsyncSession, token_id: int) -> QueueToken | None:
-    result = await db.execute(select(QueueToken).where(QueueToken.id == token_id))
+    result = await db.execute(
+        select(QueueToken).where(
+            (QueueToken.id == token_id) | (QueueToken.booking_id == token_id)
+        )
+    )
     token = result.scalar_one_or_none()
     if not token:
         return None
@@ -202,10 +244,18 @@ async def _broadcast_queue_state(db: AsyncSession, centre_id: int):
         )
     )
     current_result = await db.execute(
-        select(QueueToken).where(
+        select(QueueToken)
+        .where(
             QueueToken.centre_id == centre_id,
-            QueueToken.status.in_([TokenStatus.CALLED, TokenStatus.PROCESSING]),
-        ).limit(1)
+            QueueToken.status.in_([TokenStatus.PROCESSING, TokenStatus.CALLED]),
+        )
+        .order_by(
+            case((QueueToken.status == TokenStatus.PROCESSING, 1), else_=2),
+            QueueToken.processing_start_time.desc().nullslast(),
+            QueueToken.called_at.desc().nullslast(),
+            QueueToken.id.desc(),
+        )
+        .limit(1)
     )
     current_token = current_result.scalar_one_or_none()
 
