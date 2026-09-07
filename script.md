@@ -6,11 +6,11 @@
 > ### 🎭 Speaker Key
 > | Symbol | Speaker | Role |
 > |:---:|---|---|
-> | 👑 **[YOU]** | YTxFSGAMERz | **Team Leader — Main Presenter** |
+> | 👑 **[FARHAN]** | YTxFSGAMERz | **Team Leader — Main Presenter** |
 > | 💜 **[PRACHI]** | Prachi Pandey | **Co-Leader** |
 > | 🔵 **[VEDANT]** | Vedant | **Member** |
 > | 🟢 **[MITANSH]** | Mitansh Soliya | **Member** |
-> | 🟠 **[RUDRADEV]** | Rudradev | **Member** |
+> | 🟠 **[RUDRA]** | Rudradev | **Member** |
 > | 🔴 **[AJAY]** | Ajay Patra | **Member** |
 
 ---
