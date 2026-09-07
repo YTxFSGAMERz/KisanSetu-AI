@@ -34,25 +34,40 @@ log = logging.getLogger(__name__)
 
 # ─── ADB / Termux SMS Sender ──────────────────────────────────────────────────
 
-def _send_adb_sms(phone: str, message: str) -> bool:
+async def _send_adb_sms(phone: str, message: str) -> bool:
     """
-    Send SMS via ADB → Termux:API on a USB-connected Android phone.
-
-    Requirements:
-      - Android phone with USB Debugging enabled
-      - Termux + Termux:API installed from F-Droid
-      - 'pkg install termux-api' run inside Termux
-      - SMS permission granted to Termux:API
-      - ADB platform tools installed and in PATH on this PC
+    Send SMS via Termux SMS Bridge running on USB-connected Android phone.
+    Communication travels through the USB cable via adb port forwarding:
+      PC backend -> http://127.0.0.1:8080/sms -> Phone Termux -> termux-sms-send.
 
     Returns True on success, False on any failure (never raises).
     """
     normalized = phone.replace("+91", "").replace(" ", "").strip()
     target = f"+91{normalized}"
-
-    # Truncate to SMS limit
     msg = message[:160]
 
+    # Ensure port forward is active
+    try:
+        subprocess.run(["adb", "forward", "tcp:8080", "tcp:8080"], capture_output=True, timeout=5)
+    except Exception:
+        pass
+
+    # Try fast, direct USB bridge to Termux
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                "http://127.0.0.1:8080/sms",
+                json={"phone": target, "message": msg},
+            )
+            if resp.status_code == 200:
+                log.info("[SMS ✅] Termux/ADB bridge sent to %s", target)
+                return True
+            log.error("[SMS ❌] Termux bridge error (HTTP %d): %s", resp.status_code, resp.text[:200])
+            return False
+    except Exception as exc:
+        log.warning("[SMS ⚠️] Termux bridge HTTP unavailable (%s), trying ADB shell fallback...", exc)
+
+    # Fallback to direct ADB shell execution if bridge is temporarily stopped
     try:
         result = subprocess.run(
             ["adb", "shell", "termux-sms-send", "-n", target, msg],
@@ -61,19 +76,15 @@ def _send_adb_sms(phone: str, message: str) -> bool:
             timeout=20,
         )
         if result.returncode == 0:
-            log.info("[SMS ✅] ADB/Termux sent to %s", target)
+            log.info("[SMS ✅] ADB/Termux fallback sent to %s", target)
             return True
         log.error("[SMS ❌] ADB error (rc=%d): %s", result.returncode, result.stderr.strip()[:200])
         return False
-
     except FileNotFoundError:
-        log.error(
-            "[SMS ❌] 'adb' not found in PATH. "
-            "Install Android Platform Tools: https://developer.android.com/tools/releases/platform-tools"
-        )
+        log.error("[SMS ❌] 'adb' not found in PATH.")
         return False
     except subprocess.TimeoutExpired:
-        log.error("[SMS ❌] ADB command timed out — is the phone connected and ADB authorized?")
+        log.error("[SMS ❌] ADB command timed out.")
         return False
     except Exception as exc:
         log.error("[SMS ❌] ADB unexpected exception: %s", exc)
@@ -157,8 +168,7 @@ async def send_sms(phone: str, message: str, template_id: str = "") -> bool:
     provider = (settings.SMS_PROVIDER or "SIMULATED").upper().strip()
 
     if provider == "ADB":
-        # ADB is synchronous (subprocess) — run directly; FastAPI handles threads fine
-        return _send_adb_sms(phone, message)
+        return await _send_adb_sms(phone, message)
 
     if provider == "MSG91":
         return await _send_msg91_sms(phone, message, template_id)
