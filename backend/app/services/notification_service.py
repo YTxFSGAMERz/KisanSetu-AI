@@ -256,6 +256,23 @@ async def notify_booking_confirmed(
         reference_id=reference_id,
     )
 
+    # Real-time WebSocket push (Python desktop popup + live app)
+    try:
+        from app.core.websocket_manager import manager, QueueEvent
+        await manager.send_to_user(
+            user_id,
+            QueueEvent.BOOKING_CONFIRMED,
+            {
+                "booking_number": booking_number,
+                "centre_name": centre_name,
+                "slot_time": slot_time,
+                "token_number": token_number,
+                "message": f"Booking {booking_number} confirmed! Slot: {slot_time}. Token: {token_number}.",
+            },
+        )
+    except Exception as exc:
+        log.warning("[WS] Could not dispatch booking WebSocket event: %s", exc)
+
 
 async def notify_farmer_called(
     db: AsyncSession,
@@ -319,3 +336,18 @@ async def notify_payment_completed(
         channel=NotificationChannel.SMS,
         reference_id=reference_id,
     )
+
+    # Real-time WebSocket push (Python desktop popup + live app)
+    try:
+        from app.core.websocket_manager import manager, QueueEvent
+        await manager.send_to_user(
+            user_id,
+            QueueEvent.PAYMENT_UPDATED,
+            {
+                "amount": f"{amount:,.0f}",
+                "txn_ref": txn_ref,
+                "message": f"₹{amount:,.0f} transferred to your registered bank account. Ref: {txn_ref}",
+            },
+        )
+    except Exception as exc:
+        log.warning("[WS] Could not dispatch payment WebSocket event: %s", exc)

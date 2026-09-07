@@ -49,4 +49,4 @@ async def user_websocket(
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        manager.disconnect_user(user_id)
+        manager.disconnect_user(user_id, websocket)
