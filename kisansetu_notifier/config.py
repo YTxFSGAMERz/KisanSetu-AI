@@ -53,16 +53,23 @@ class NotifierConfig:
     api_url: str = os.getenv("KISANSETU_API_URL") or _build_api_url()
     ws_url:  str = os.getenv("KISANSETU_WS_URL")  or _build_ws_url()
 
-    # ── Auto-login: prefer notifier-specific creds, fall back to DEMO_ADMIN ───
-    # The demo admin account is seeded automatically during first run, so this
-    # works out-of-the-box with zero manual configuration.
+    frontend_url: str = (
+        os.getenv("KISANSETU_WEB_URL") or
+        os.getenv("FRONTEND_URL") or
+        f"http://localhost:{os.getenv('FRONTEND_PORT', '3000')}"
+    )
+
+    # ── Auto-login: prefer notifier-specific creds, then DEMO_FARMER, then DEMO_ADMIN ───
+    # The demo farmer account is the primary recipient of token calls, bookings & DBT payments.
     email:    str = (
         os.getenv("KISANSETU_EMAIL") or
-        os.getenv("DEMO_ADMIN_EMAIL", "demo.admin@example.com")
+        os.getenv("DEMO_FARMER_EMAIL") or
+        os.getenv("DEMO_ADMIN_EMAIL", "demo.farmer@example.com")
     )
     password: str = (
         os.getenv("KISANSETU_PASSWORD") or
-        os.getenv("DEMO_ADMIN_PASSWORD", "")
+        os.getenv("DEMO_FARMER_PASSWORD") or
+        os.getenv("DEMO_ADMIN_PASSWORD", "Farmer123!")
     )
 
     # ── User ID: 0 means "auto-fetch from /auth/me after login" ───────────────

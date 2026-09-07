@@ -9,34 +9,25 @@ A standalone Python desktop notifier for KisanSetu AI that:
 
 ---
 
-## Setup
+## Quick Start (Zero Config Needed!)
 
-### 1. Install dependencies
+The notifier **automatically detects credentials and backend URLs from the project root `.env`**. By default, it connects as the demo farmer (`demo.farmer@example.com`) to instantly receive slot confirmations, queue calls, and payment updates.
 
+### 1. Instant Test (No backend needed)
+Test the pop-up notification window on your screen right away:
 ```bash
-cd kisansetu_notifier
-pip install -r requirements.txt
+python kisansetu_notifier/main.py --test
+# or
+python kisansetu_notifier/popup.py
 ```
 
-### 2. Configure
-
-Edit `notifier.env` with your KisanSetu login:
-
-```dotenv
-KISANSETU_API_URL=http://localhost:8000
-KISANSETU_WS_URL=ws://localhost:8000
-KISANSETU_EMAIL=your_email@example.com
-KISANSETU_PASSWORD=your_password
-KISANSETU_USER_ID=1   # your user ID
-```
-
-### 3. Run
-
+### 2. Run Notifier with Live KisanSetu Backend
 ```bash
-python main.py
+python kisansetu_notifier/main.py
 ```
+*(Or simply run `.\start.bat` from the root folder — it automatically starts Backend, Frontend, and Notifier together!)*
 
-A KisanSetu icon appears in the system tray. Trigger any event in the frontend (booking, token call, payment) and a popup will appear at the bottom-right of your screen.
+A green KisanSetu icon appears in your system tray and a welcome pop-up will notify you that alerts are live.
 
 ---
 
@@ -85,9 +76,10 @@ Restart the backend — SMS will now fire through your phone's SIM automatically
 ---
 
 ## Tray Menu
-
+ 
 Right-click the tray icon for:
-- **Open KisanSetu** — opens the web app in your browser
+- **Open KisanSetu Web App** — opens the web app in your default browser (`http://localhost:3000`)
+- **🔔 Send Test Notification** — immediately tests a popup card on screen
 - **Reconnect** — manually restart the WebSocket connection
 - **Quit** — exit the notifier
 

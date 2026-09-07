@@ -25,6 +25,10 @@ from PyQt5.QtCore import Qt
 import pystray
 from PIL import Image, ImageDraw
 
+_THIS_DIR = Path(__file__).resolve().parent
+if str(_THIS_DIR) not in sys.path:
+    sys.path.insert(0, str(_THIS_DIR))
+
 from config import config
 from popup import show_notification, popup_signals
 from ws_client import run_ws_client
@@ -123,7 +127,15 @@ def _start_ws_thread():
 def _build_tray_menu(app: QApplication) -> pystray.Menu:
     def on_open(_icon, _item):
         import webbrowser
-        webbrowser.open(f"{config.api_url}")
+        webbrowser.open(f"{config.frontend_url}")
+
+    def on_send_test(_icon, _item):
+        log.info("[TRAY] Test popup requested")
+        popup_signals.show.emit(
+            "FARMER_CALLED",
+            "Token A042 Called! (Test)",
+            "KisanSetu Desktop Notifier is active! Please proceed to Mandi Counter 1.",
+        )
 
     def on_reconnect(_icon, _item):
         log.info("[TRAY] Reconnect requested — restarting WS thread")
@@ -136,7 +148,8 @@ def _build_tray_menu(app: QApplication) -> pystray.Menu:
         app.quit()
 
     return pystray.Menu(
-        pystray.MenuItem("Open KisanSetu", on_open, default=True),
+        pystray.MenuItem("Open KisanSetu Web App", on_open, default=True),
+        pystray.MenuItem("🔔 Send Test Notification", on_send_test),
         pystray.MenuItem("Reconnect", on_reconnect),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quit", on_quit),
@@ -146,8 +159,21 @@ def _build_tray_menu(app: QApplication) -> pystray.Menu:
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
+    # CLI --test mode: show a test notification and exit cleanly
+    if "--test" in sys.argv:
+        print("[*] Running KisanSetu Pop-Up Notification in TEST mode...")
+        app = QApplication(sys.argv)
+        show_notification(
+            "FARMER_CALLED",
+            "Token A042 Called! (Test)",
+            "KisanSetu Desktop Pop-up is working! Please proceed to Mandi Counter 1.",
+        )
+        from PyQt5.QtCore import QTimer
+        QTimer.singleShot((config.popup_duration + 1) * 1000, app.quit)
+        sys.exit(app.exec_())
+
     log.info("🌾 KisanSetu Notifier starting...")
-    log.info("   API: %s | User ID: %d", config.api_url, config.user_id)
+    log.info("   API: %s | User: %s", config.api_url, config.email)
     log.info("   Events: %s", ", ".join(sorted(config.notify_events)))
 
     # Qt application (headless — no main window)
@@ -177,6 +203,17 @@ def main():
     tray_thread = threading.Thread(target=tray_icon.run, daemon=True, name="KisanSetu-Tray")
     tray_thread.start()
     log.info("[TRAY] System tray icon started")
+
+    # Display a brief welcome pop-up on launch
+    from PyQt5.QtCore import QTimer
+    QTimer.singleShot(
+        1500,
+        lambda: popup_signals.show.emit(
+            "NOTIFICATION",
+            "KisanSetu Notifier Active 🌾",
+            f"Desktop pop-ups active for {config.email}. Listening for live Mandi alerts.",
+        ),
+    )
 
     # Qt event loop — blocks until app.quit() is called
     sys.exit(app.exec_())
