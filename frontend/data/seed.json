@@ -457,7 +457,7 @@
       "centre_id": 1,
       "centre_name": "Karnal Grain Mandi — Haryana State Agricultural Marketing Board",
       "slot_id": 1,
-      "slot_date": "2026-10-04",
+      "slot_date": "2026-10-11",
       "slot_time": "09:00 - 11:00",
       "crop_id": 1,
       "crop_name": "Wheat",
@@ -467,7 +467,7 @@
       "queue_position": 1,
       "estimated_wait_minutes": 15.0,
       "notes": "Wheat Sharbati grade FAQ, 40 Quintals",
-      "created_at": "2026-10-04 05:30:48.508246"
+      "created_at": "2026-10-11 05:23:49.117786"
     }
   ],
   "queue_tokens": [
@@ -483,7 +483,7 @@
       "crop_name": "Wheat",
       "expected_quantity": 40.0,
       "farmers_ahead": 0,
-      "arrival_time": "2026-10-04 05:20:48.509715",
+      "arrival_time": "2026-10-11 05:13:49.119262",
       "called_at": null
     }
   ],
@@ -504,8 +504,8 @@
       "procurement_amount": 87587.5,
       "status": "COMPLETED",
       "receipt_number": "RCP-KNL-2026-0001",
-      "created_at": "2026-10-04 05:30:48.512858",
-      "completed_at": "2026-10-04 03:30:48.512275"
+      "created_at": "2026-10-11 05:23:49.122471",
+      "completed_at": "2026-10-11 03:23:49.121862"
     }
   ],
   "payments": [
@@ -518,8 +518,8 @@
       "farmer_name": "Rajesh Verma",
       "crop_name": "Wheat",
       "receipt_number": "RCP-KNL-2026-0001",
-      "created_at": "2026-10-04 05:30:48.513827",
-      "completed_at": "2026-10-04 04:30:48.513251"
+      "created_at": "2026-10-11 05:23:49.123471",
+      "completed_at": "2026-10-11 04:23:49.122868"
     }
   ],
   "notifications": [
@@ -531,7 +531,7 @@
       "type": "BOOKING_CONFIRMED",
       "channel": "IN_APP",
       "is_read": true,
-      "created_at": "2026-10-04 05:30:48.515732"
+      "created_at": "2026-10-11 05:23:49.125442"
     },
     {
       "id": 2,
@@ -541,7 +541,7 @@
       "type": "PAYMENT_COMPLETED",
       "channel": "SMS",
       "is_read": false,
-      "created_at": "2026-10-04 05:30:48.515735"
+      "created_at": "2026-10-11 05:23:49.125445"
     }
   ]
 }
